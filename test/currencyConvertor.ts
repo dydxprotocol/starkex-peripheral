@@ -4,7 +4,8 @@ import { solidity } from "ethereum-waffle";
 import CurrencyConvertorArtifact from '../artifacts/contracts/proxies/CurrencyConvertor.sol/CurrencyConvertor.json';
 import ZeroExExchangeWrapperArtifact from '../artifacts/contracts/exchange-wrappers/ZeroExExchangeWrapper.sol/ZeroExExchangeWrapper.json';
 import StarkwareArtifact from '../artifacts/contracts/exchange-wrappers/Starkware.sol/Starkware.json';
-import UsdcContractArtifact from '../artifacts/contracts/tokens/usdcContract.sol/UsdcContract.json';
+import UsdcContractArtifact from '../artifacts/contracts/tokens/mockUsdcContract.sol/MockUsdcContract.json';
+import { formatUnits } from '@ethersproject/units';
 
 const { deployContract } = waffle
 
@@ -32,13 +33,13 @@ describe("CurrencyConvertor", () => {
       UsdcContractArtifact,
     )
 
-    usdc.mint(
+    await usdc.mint(
       zeroExExchangeWrapper.address,
-      1000e6,
+      formatUnits(1000, 6),
     )
-    usdc.mint(
+    await usdc.mint(
       starkware.address,
-      1000e6,
+      formatUnits(1000, 6),
     )
 
     currencyConvertor = await deployContract(
@@ -51,10 +52,13 @@ describe("CurrencyConvertor", () => {
       ],
     );
 
-    usdc.mint(
+    await usdc.mint(
       currencyConvertor.address,
-      1000e6,
+      formatUnits(1000, 6),
     )
+
+    await usdc.approve(currencyConvertor.address, 100);
+
     expect(currencyConvertor.address).to.properAddress;
   });
   // 4

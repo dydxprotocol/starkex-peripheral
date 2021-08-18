@@ -39,8 +39,8 @@ interface I_ExchangeWrapper {
     function exchange(
         address tradeOriginator,
         address receiver,
-        address makerToken,
-        address takerToken,
+        IERC20 makerToken,
+        IERC20 takerToken,
         uint256 inputTokenAmount,
         bytes calldata orderData
     )

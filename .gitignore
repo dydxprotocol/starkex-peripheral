@@ -1,6 +1,6 @@
-build/
-coverage/
-node_modules/
-cache/
-artifacts
-src/typess/
+/build/
+/coverage/
+/node_modules/
+/cache/
+/artifacts
+/src/typess/

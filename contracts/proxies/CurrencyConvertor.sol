@@ -19,21 +19,21 @@ import { I_ExchangeWrapper } from "../external/I_ExchangeWrapper.sol";
 import { I_StarkwareContract } from "../external/I_StarkwareContracts.sol";
 
 contract CurrencyConvertor {
-  using SafeERC20 for IERC20;
+    using SafeERC20 for IERC20;
 
     // ============ State Variables ============
 
-    address USDC_ADDRESS;
+    IERC20 USDC_ADDRESS;
 
     uint256 USDC_ASSET_TYPE;
 
-    I_StarkwareContract public STARKWARE_CONTRACT;
+    I_StarkwareContract public immutable STARKWARE_CONTRACT;
 
     // ============ Constructor ============
 
     constructor(
         address starkwareContractAddress,
-        address usdcAddress,
+        IERC20 usdcAddress,
         uint256 usdcAssetType
     )
         public
@@ -69,7 +69,7 @@ contract CurrencyConvertor {
     * @param  data             Trade parameters for the ExchangeWrapper.
     */
   function deposit(
-    address tokenFrom,
+    IERC20 tokenFrom,
     uint256 tokenFromAmount,
     address exchangeWrapper,
     uint256 starkKey,
@@ -79,12 +79,12 @@ contract CurrencyConvertor {
     external
     returns (uint256)
   {
-    // Send fromToken to the ExchangeWrapper.
-    // IERC20(tokenFrom).safeTransferFrom(
-    //   msg.sender,
-    //   exchangeWrapper,
-    //   tokenFromAmount
-    // );
+    Send fromToken to the ExchangeWrapper.
+    IERC20(tokenFrom).safeTransferFrom(
+      msg.sender,
+      exchangeWrapper,
+      tokenFromAmount
+    );
 
     address self = address(this);
 
@@ -100,15 +100,15 @@ contract CurrencyConvertor {
         data
     );
 
-    // Receive toToken from the ExchangeWrapper.
-    // IERC20(USDC_ADDRESS).safeTransferFrom(
-    //     exchangeWrapper,
-    //     self,
-    //     tokenToAmount
-    // );
+    Receive toToken from the ExchangeWrapper.
+    IERC20(USDC_ADDRESS).safeTransferFrom(
+        exchangeWrapper,
+        self,
+        tokenToAmount
+    );
 
 
-    // Deposit toToken to the L2.
+    // Deposit USDC to the L2.
     STARKWARE_CONTRACT.depositERC20(
         starkKey,
         USDC_ASSET_TYPE,

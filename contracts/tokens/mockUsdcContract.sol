@@ -12,11 +12,8 @@
 */
 
 pragma solidity 0.5.5;
-pragma experimental ABIEncoderV2;
 
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ERC20Detailed } from "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
-
 
 /**
  * @title Test_Token2
@@ -25,8 +22,7 @@ import { ERC20Detailed } from "@openzeppelin/contracts/token/ERC20/ERC20Detailed
  * @notice A second ERC-20 token for testing.
  */
 /* solium-disable-next-line camelcase */
-contract UsdcContract is
-    ERC20,
+contract MockUsdcContract is
     ERC20Detailed("Test Token 2", "TEST2", 6)
 {
     function mint(address account, uint256 amount) external {
