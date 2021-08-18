@@ -11,21 +11,24 @@
     limitations under the License.
 */
 
-pragma solidity ^0.5.5;
+pragma solidity ^0.8.0;
+
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { I_ExchangeWrapper } from "../external/I_ExchangeWrapper.sol";
 import { I_StarkwareContract } from "../external/I_StarkwareContracts.sol";
+import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "hardhat/console.sol";
 
 contract CurrencyConvertor {
     using SafeERC20 for IERC20;
 
     // ============ State Variables ============
 
-    IERC20 USDC_ADDRESS;
+    ERC20 immutable USDC_ADDRESS;
 
-    uint256 USDC_ASSET_TYPE;
+    uint256 immutable USDC_ASSET_TYPE;
 
     I_StarkwareContract public immutable STARKWARE_CONTRACT;
 
@@ -33,10 +36,9 @@ contract CurrencyConvertor {
 
     constructor(
         address starkwareContractAddress,
-        IERC20 usdcAddress,
+        ERC20 usdcAddress,
         uint256 usdcAssetType
     )
-        public
     {
         STARKWARE_CONTRACT = I_StarkwareContract(starkwareContractAddress);
         USDC_ADDRESS = usdcAddress;
@@ -49,7 +51,7 @@ contract CurrencyConvertor {
         address indexed account,
         address source,
         address exchangeWrapper,
-        address tokenFrom,
+        ERC20 tokenFrom,
         uint256 tokenFromAmount,
         uint256 tokenToAmount
     );
@@ -69,7 +71,7 @@ contract CurrencyConvertor {
     * @param  data             Trade parameters for the ExchangeWrapper.
     */
   function deposit(
-    IERC20 tokenFrom,
+    ERC20 tokenFrom,
     uint256 tokenFromAmount,
     address exchangeWrapper,
     uint256 starkKey,
@@ -79,7 +81,8 @@ contract CurrencyConvertor {
     external
     returns (uint256)
   {
-    Send fromToken to the ExchangeWrapper.
+
+    // Send fromToken to the ExchangeWrapper.
     IERC20(tokenFrom).safeTransferFrom(
       msg.sender,
       exchangeWrapper,
@@ -100,12 +103,12 @@ contract CurrencyConvertor {
         data
     );
 
-    Receive toToken from the ExchangeWrapper.
-    IERC20(USDC_ADDRESS).safeTransferFrom(
-        exchangeWrapper,
-        self,
-        tokenToAmount
-    );
+    // Receive toToken from the ExchangeWrapper.
+    // IERC20(USDC_ADDRESS).safeTransferFrom(
+    //     exchangeWrapper,
+    //     self,
+    //     tokenToAmount
+    // );
 
 
     // Deposit USDC to the L2.

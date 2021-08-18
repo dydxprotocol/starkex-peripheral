@@ -5,7 +5,6 @@ import CurrencyConvertorArtifact from '../artifacts/contracts/proxies/CurrencyCo
 import ZeroExExchangeWrapperArtifact from '../artifacts/contracts/exchange-wrappers/ZeroExExchangeWrapper.sol/ZeroExExchangeWrapper.json';
 import StarkwareArtifact from '../artifacts/contracts/exchange-wrappers/Starkware.sol/Starkware.json';
 import UsdcContractArtifact from '../artifacts/contracts/tokens/mockUsdcContract.sol/MockUsdcContract.json';
-import { formatUnits } from '@ethersproject/units';
 
 const { deployContract } = waffle
 
@@ -35,11 +34,11 @@ describe("CurrencyConvertor", () => {
 
     await usdc.mint(
       zeroExExchangeWrapper.address,
-      formatUnits(1000, 6),
+      1000e6,
     )
     await usdc.mint(
       starkware.address,
-      formatUnits(1000, 6),
+      1000e6,
     )
 
     currencyConvertor = await deployContract(
@@ -53,19 +52,16 @@ describe("CurrencyConvertor", () => {
     );
 
     await usdc.mint(
-      currencyConvertor.address,
-      formatUnits(1000, 6),
+      signers[0].address,
+      1000e6,
     )
 
-    await usdc.approve(currencyConvertor.address, 100);
-
-    expect(currencyConvertor.address).to.properAddress;
+    await usdc.approve(currencyConvertor.address, 1e10);
   });
-  // 4
   describe("deposit", async () => {
     it("deposit USDT to USDC", async () => {
       await currencyConvertor.deposit(
-        usdc.address, // placeholder for USDT
+        usdc.address,
         100,
         zeroExExchangeWrapper.address,
         100,

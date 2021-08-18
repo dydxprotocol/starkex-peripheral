@@ -11,7 +11,8 @@
     limitations under the License.
 */
 
-pragma solidity ^0.5.5;
+pragma solidity ^0.8.0;
+
 
 interface I_StarkwareContract {
 

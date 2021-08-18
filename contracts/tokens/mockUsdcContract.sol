@@ -11,9 +11,9 @@
     limitations under the License.
 */
 
-pragma solidity 0.5.5;
+pragma solidity 0.8.0;
 
-import { ERC20Detailed } from "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
+import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /**
  * @title Test_Token2
@@ -23,7 +23,7 @@ import { ERC20Detailed } from "@openzeppelin/contracts/token/ERC20/ERC20Detailed
  */
 /* solium-disable-next-line camelcase */
 contract MockUsdcContract is
-    ERC20Detailed("Test Token 2", "TEST2", 6)
+    ERC20('USDC', 'USDC')
 {
     function mint(address account, uint256 amount) external {
         _mint(account, amount);

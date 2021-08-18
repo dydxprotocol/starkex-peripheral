@@ -11,9 +11,11 @@
     limitations under the License.
 */
 
-pragma solidity ^0.5.5;
+pragma solidity ^0.8.0;
+
 
 import { I_ExchangeWrapper } from "../external/I_ExchangeWrapper.sol";
+import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract ZeroExExchangeWrapper is I_ExchangeWrapper  {
     // ============ Public Functions ============
@@ -34,12 +36,12 @@ contract ZeroExExchangeWrapper is I_ExchangeWrapper  {
     function exchange(
         address tradeOriginator,
         address receiver,
-        IERC20 makerToken,
-        IERC20 takerToken,
+        ERC20 makerToken,
+        ERC20 takerToken,
         uint256 inputTokenAmount,
         bytes calldata orderData
     )
-        external
+        external override
         returns (uint256)
     {
         // TODO implement a call to the actual ERC20 Transformation

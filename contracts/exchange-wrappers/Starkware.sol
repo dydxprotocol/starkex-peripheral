@@ -11,7 +11,8 @@
     limitations under the License.
 */
 
-pragma solidity ^0.5.5;
+pragma solidity ^0.8.0;
+
 
 import { I_StarkwareContract } from "../external/I_StarkwareContracts.sol";
 
@@ -32,7 +33,7 @@ contract Starkware is I_StarkwareContract {
         uint256 assetType,
         uint256 vaultId,
         uint256 quantizedAmount
-    ) external
+    ) external override
     {
 
     }
