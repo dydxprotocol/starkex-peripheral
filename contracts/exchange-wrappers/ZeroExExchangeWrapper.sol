@@ -13,5 +13,36 @@
 
 pragma solidity ^0.5.5;
 
-contract ZeroExExchangeWrapper {
+import { I_ExchangeWrapper } from "../external/I_ExchangeWrapper.sol";
+
+contract ZeroExExchangeWrapper is I_ExchangeWrapper  {
+    // ============ Public Functions ============
+
+    /**
+     * Exchange some amount of takerToken for makerToken. Just for tests
+     *
+     * @param  tradeOriginator      Address of the initiator of the trade (however, this value
+     *                              cannot always be trusted as it is set at the discretion of the
+     *                              msg.sender)
+     * @param  receiver             Address to set allowance on once the trade has completed
+     * @param  makerToken           Address of makerToken, the token to receive
+     * @param  takerToken           Address of takerToken, the token to pay
+     * @param  inputTokenAmount     Amount of makerToken
+     * @param  orderData            Arbitrary bytes data for any information to pass to the exchange
+     * @return                      The amount of makerToken received
+     */
+    function exchange(
+        address tradeOriginator,
+        address receiver,
+        address makerToken,
+        address takerToken,
+        uint256 inputTokenAmount,
+        bytes calldata orderData
+    )
+        external
+        returns (uint256)
+    {
+        // TODO implement a call to the actual ERC20 Transformation
+        return inputTokenAmount / uint(2);
+    }
 }

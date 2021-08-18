@@ -32,13 +32,13 @@ contract CurrencyConvertor {
     // ============ Constructor ============
 
     constructor(
-        I_StarkwareContract starkwareContract,
+        address starkwareContractAddress,
         address usdcAddress,
         uint256 usdcAssetType
     )
         public
     {
-        STARKWARE_CONTRACT = starkwareContract;
+        STARKWARE_CONTRACT = I_StarkwareContract(starkwareContractAddress);
         USDC_ADDRESS = usdcAddress;
         USDC_ASSET_TYPE = usdcAssetType;
     }
@@ -80,16 +80,17 @@ contract CurrencyConvertor {
     returns (uint256)
   {
     // Send fromToken to the ExchangeWrapper.
-    IERC20(tokenFrom).safeTransferFrom(
-      msg.sender,
-      exchangeWrapper,
-      tokenFromAmount
-    );
+    // IERC20(tokenFrom).safeTransferFrom(
+    //   msg.sender,
+    //   exchangeWrapper,
+    //   tokenFromAmount
+    // );
 
     address self = address(this);
 
     // Convert fromToken to toToken on the ExchangeWrapper.
     I_ExchangeWrapper exchangeWrapperContract = I_ExchangeWrapper(exchangeWrapper);
+
     uint256 tokenToAmount = exchangeWrapperContract.exchange(
         msg.sender,
         self,
@@ -100,11 +101,11 @@ contract CurrencyConvertor {
     );
 
     // Receive toToken from the ExchangeWrapper.
-    IERC20(USDC_ADDRESS).safeTransferFrom(
-        exchangeWrapper,
-        self,
-        tokenToAmount
-    );
+    // IERC20(USDC_ADDRESS).safeTransferFrom(
+    //     exchangeWrapper,
+    //     self,
+    //     tokenToAmount
+    // );
 
 
     // Deposit toToken to the L2.
