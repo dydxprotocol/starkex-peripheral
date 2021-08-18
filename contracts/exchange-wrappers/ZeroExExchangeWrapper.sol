@@ -11,22 +11,7 @@
     limitations under the License.
 */
 
-pragma solidity ^0.8.7;
+pragma solidity ^0.5.5;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-
-contract Counter {
-  using SafeERC20 for IERC20;
-
-  // ============ Events ============
-
-  uint256 count = 0;
-  event CountedTo(uint256 number);
-
-  // ============ State-Changing Functions ============
-
-  function deposit(
-
-  )
+contract ZeroExExchangeWrapper {
 }

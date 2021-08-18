@@ -3,4 +3,4 @@ coverage/
 node_modules/
 cache/
 artifacts
-src/typess
+src/typess/

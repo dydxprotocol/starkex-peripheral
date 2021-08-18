@@ -2,6 +2,7 @@
   "name": "hardhat-project",
   "dependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@openzeppelin/contracts": "2.5.0",
     "chai": "^4.3.4",
     "hardhat": "^2.6.0"
   },
