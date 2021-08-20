@@ -1,7 +1,12 @@
 {
-  "name": "hardhat-project",
+  "name": "starkex-peripheral",
+  "scripts": {
+    "build": "npx hardhat compile",
+    "test": "npx hardhat test"
+  },
   "dependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@openzeppelin/contracts": "4.3.0",
     "chai": "^4.3.4",
     "hardhat": "^2.6.0"
   },
