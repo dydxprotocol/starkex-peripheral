@@ -32,4 +32,13 @@ interface I_StarkwareContract {
         uint256 vaultId,
         uint256 quantizedAmount
     ) external;
+
+    function registerAndDepositERC20(
+        address ethKey,
+        uint256 starkKey,
+        bytes memory signature,
+        uint256 assetType,
+        uint256 vaultId,
+        uint256 quantizedAmount
+    ) external;
 }

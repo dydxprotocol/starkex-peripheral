@@ -4,8 +4,17 @@ import '@typechain/hardhat'
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 
+require('dotenv').config()
+
 const config: HardhatUserConfig = {
-  defaultNetwork: "hardhat",
+  networks: {
+    hardhat: {
+      forking: {
+        url: process.env.FORK as string,
+        blockNumber: 10888007
+      }
+    }
+  },
   solidity: {
     compilers: [{ version: "0.8.0", settings: { optimizer: {enabled: true, runs: 200} } }],
   },

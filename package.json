@@ -11,12 +11,16 @@
     "hardhat": "^2.6.0"
   },
   "devDependencies": {
+    "@dydxprotocol/starkex-lib": "^1.0.5",
+    "@dydxprotocol/v3-client": "^1.0.25",
     "@nomiclabs/buidler": "^1.4.8",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@typechain/ethers-v5": "^7.0.1",
     "@typechain/hardhat": "^2.3.0",
     "@types/mocha": "^9.0.0",
     "@types/node": "^16.6.1",
+    "axios": "^0.21.1",
+    "dotenv": "^10.0.0",
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.4.4",
     "ts-generator": "^0.1.1",

@@ -20,26 +20,12 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract ZeroExExchangeWrapper is I_ExchangeWrapper  {
     // ============ Public Functions ============
 
-    /**
-     * Exchange some amount of takerToken for makerToken. Just for tests
-     *
-     * @param  tradeOriginator      Address of the initiator of the trade (however, this value
-     *                              cannot always be trusted as it is set at the discretion of the
-     *                              msg.sender)
-     * @param  receiver             Address to set allowance on once the trade has completed
-     * @param  makerToken           Address of makerToken, the token to receive
-     * @param  takerToken           Address of takerToken, the token to pay
-     * @param  inputTokenAmount     Amount of makerToken
-     * @param  orderData            Arbitrary bytes data for any information to pass to the exchange
-     * @return                      The amount of makerToken received
-     */
-    function exchange(
-        address tradeOriginator,
-        address receiver,
-        ERC20 makerToken,
-        ERC20 takerToken,
+    function transformERC20(
+        ERC20 inputToken,
+        ERC20 outputToken,
         uint256 inputTokenAmount,
-        bytes calldata orderData
+        uint256 minOutputTokenAmount,
+        bytes calldata transformations
     )
         external override
         returns (uint256)

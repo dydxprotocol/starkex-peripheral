@@ -4,3 +4,4 @@
 /cache/
 /artifacts
 /src/typess/
+.env
