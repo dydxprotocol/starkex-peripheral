@@ -14,10 +14,15 @@
 pragma solidity ^0.8.0;
 
 
-import { I_StarkwareContract } from "../external/I_StarkwareContracts.sol";
+import { I_StarkwareContract } from "../interfaces/I_StarkwareContracts.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "hardhat/console.sol";
 
+/**
+ * @title MockStarkware
+ * @author dYdX
+ *
+ * Mock implementation of interface for starkexex-contracts.
+ */
 contract MockStarkware is I_StarkwareContract {
 
     // ============ State Variables ============
@@ -34,17 +39,6 @@ contract MockStarkware is I_StarkwareContract {
     }
 
   // ============ State-Changing Functions ============
-
-    function registerAndDepositERC20(
-        address ethKey,
-        uint256 starkKey,
-        bytes memory signature,
-        uint256 assetType,
-        uint256 vaultId,
-        uint256 quantizedAmount
-    ) external override
-    {
-    }
 
     /**
     * @notice Make a deposit to the Starkware Layer2 Solution.
@@ -83,12 +77,6 @@ contract MockStarkware is I_StarkwareContract {
         );
     }
 
-    function extractContractAddress(
-        uint256 assetType
-    ) internal returns (address) {
-        return USDC_ADDRESS;
-    }
-
     /*
       Safe wrapper around ERC20/ERC721 calls.
       This is required because many deployed ERC20 contracts don't return a value.
@@ -112,5 +100,11 @@ contract MockStarkware is I_StarkwareContract {
             size := extcodesize(account)
         }
         return size > 0;
+    }
+
+    function extractContractAddress(
+        uint256 assetType
+    ) internal returns (address) {
+        return USDC_ADDRESS;
     }
 }

@@ -12,20 +12,17 @@
 */
 
 pragma solidity ^0.8.0;
+pragma experimental ABIEncoderV2;
 
-import { I_ExchangeWrapper } from "../interfaces/I_ExchangeWrapper.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
- * @title ZeroExExchangeWrapper
+ * @title I_ExchangeWrapper
  * @author dYdX
  *
- * Wrapper around 0x API ERC20 token swap.
+ * Interface that Exchange Wrappers for Starkex-Peripheral must implement in order to trade ERC20 tokens.
  */
-contract ZeroExExchangeWrapper is I_ExchangeWrapper {
-    using SafeERC20 for IERC20;
-
+interface I_ExchangeWrapper {
 
     // ============ Public Functions ============
 
@@ -50,38 +47,8 @@ contract ZeroExExchangeWrapper is I_ExchangeWrapper {
         uint256 requestedFillAmount,
         bytes calldata orderData
     )
-        external override
-        returns (uint256)
-    {
-      address self = address(this);
-      address exchange = bytesToAddress(orderData);
-
-      uint256 originalTakerBalance = makerToken.balanceOf(self);
-
-      // Send fromToken to this contract.
-      IERC20(takerToken).safeTransferFrom(
-        msg.sender,
-        self,
-        requestedFillAmount
-      );
-
-      // Swap token
-      IERC20(takerToken).safeApprove(exchange, type(uint256).max);
-      (bool success, bytes memory returndata) = exchange.call(orderData[32:]);
-      require(success, string(returndata));
-
-      // find change in balance of takerToken on this contract
-      uint256 takerBalanceChange= IERC20(makerToken).balanceOf(self) - originalTakerBalance;
-
-      // transfer change in balance of takerToken to msg.sender
-      IERC20(makerToken).safeTransferFrom(
-        self,
-        msg.sender,
-        takerBalanceChange
-      );
-
-      return takerBalanceChange;
-    }
+        external
+        returns (uint256);
 
     /**
      * Get amount of takerToken required to buy a certain amount of makerToken for a given trade.
@@ -101,21 +68,7 @@ contract ZeroExExchangeWrapper is I_ExchangeWrapper {
         uint256 desiredMakerToken,
         bytes calldata orderData
     )
-        external override
+        external
         view
-        returns (uint256) {
-            return 0; // stubbed out for now and will potentially remove this method
-        }
-
-    /**
-     * Convert bytes to an ethereum address
-
-     * @param bys   Is total bytes array the address is prepended to
-     * @return addr The ethereum address
-     */
-    function bytesToAddress(bytes memory bys) private pure returns (address addr) {
-        assembly {
-          addr := mload(add(bys,32))
-        }
-    }
+        returns (uint256);
 }

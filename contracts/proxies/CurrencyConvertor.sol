@@ -12,21 +12,27 @@
 */
 
 pragma solidity ^0.8.0;
+pragma experimental ABIEncoderV2;
 
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { I_ExchangeWrapper } from "../external/I_ExchangeWrapper.sol";
-import { I_StarkwareContract } from "../external/I_StarkwareContracts.sol";
+import { I_StarkwareContract } from "../interfaces/I_StarkwareContracts.sol";
+import { I_ExchangeWrapper } from "../interfaces/I_ExchangeWrapper.sol";
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "hardhat/console.sol";
 
+/**
+ * @title CurrencyConvertor
+ * @author dYdX
+ *
+ * Contract for depositing and withdrawaing to dYdX L2 in non-USDC tokens.
+ */
 contract CurrencyConvertor {
     using SafeERC20 for IERC20;
 
     // ============ State Variables ============
 
-    ERC20 immutable USDC_ADDRESS;
+    IERC20 immutable USDC_ADDRESS;
 
     uint256 immutable USDC_ASSET_TYPE;
 
@@ -36,13 +42,19 @@ contract CurrencyConvertor {
 
     constructor(
         address starkwareContractAddress,
-        ERC20 usdcAddress,
+        address usdcAddress,
         uint256 usdcAssetType
     )
     {
         STARKWARE_CONTRACT = I_StarkwareContract(starkwareContractAddress);
-        USDC_ADDRESS = usdcAddress;
+        USDC_ADDRESS = IERC20(usdcAddress);
         USDC_ASSET_TYPE = usdcAssetType;
+
+        // safeApprove requires unsetting the allowance first.
+        IERC20(usdcAddress).safeApprove(address(this), 0);
+
+        // Set the allowance to the highest possible value.
+        IERC20(usdcAddress).safeApprove(starkwareContractAddress, type(uint256).max);
     }
 
   // ============ Events ============
@@ -51,29 +63,12 @@ contract CurrencyConvertor {
         address indexed account,
         address source,
         address exchangeWrapper,
-        ERC20 tokenFrom,
+        address tokenFrom,
         uint256 tokenFromAmount,
         uint256 tokenToAmount
     );
 
   // ============ State-Changing Functions ============
-
-      /**
-     * @notice Sets the maximum allowance on the L2 contract. Must be called at least once
-     *  before deposits can be made.
-     * @dev Cannot be run in the constructor due to technical restrictions in Solidity.
-     */
-    function approveMaximumOnL2()
-        external
-    {
-        IERC20 tokenContract = IERC20(USDC_ADDRESS);
-
-        // safeApprove requires unsetting the allowance first.
-        tokenContract.safeApprove(address(this), 0);
-
-        // Set the allowance to the highest possible value.
-        tokenContract.safeApprove(address(STARKWARE_CONTRACT), 1000000000);
-    }
 
   /**
     * @notice Make a deposit to the Starkware Layer2 Solution, after converting funds to USDC.
@@ -88,7 +83,7 @@ contract CurrencyConvertor {
     * @param  data             Trade parameters for the ExchangeWrapper.
     */
   function deposit(
-    ERC20 tokenFrom,
+    address tokenFrom,
     uint256 tokenFromAmount,
     address exchangeWrapper,
     uint256 starkKey,
@@ -100,29 +95,31 @@ contract CurrencyConvertor {
   {
     address self = address(this);
 
-    // Send fromToken to the ExchangeWrapper.
-    // IERC20(tokenFrom).safeTransferFrom(
-    //   msg.sender,
-    //   self,
-    //   tokenFromAmount
-    // );
+    // Send fromToken to this contract.
+    IERC20(tokenFrom).safeTransferFrom(
+      msg.sender,
+      self,
+      tokenFromAmount
+    );
 
-   (bool success, bytes memory returndata) = address(exchangeWrapper).call(data);
-    // require(success, string(returndata));
-
-    // Receive toToken from the ExchangeWrapper.
-    // IERC20(USDC_ADDRESS).safeTransferFrom(
-    //     exchangeWrapper,
-    //     self,
-    //     tokenToAmount
-    // );
+    // Convert fromToken to toToken on the ExchangeWrapper.
+    IERC20(tokenFrom).safeApprove(exchangeWrapper, type(uint256).max);
+    I_ExchangeWrapper exchangeWrapperContract = I_ExchangeWrapper(exchangeWrapper);
+    uint256 tokenToAmount = exchangeWrapperContract.exchange(
+        msg.sender,
+        self,
+        USDC_ADDRESS,
+        IERC20(tokenFrom),
+        tokenFromAmount,
+        data
+    );
 
     // Deposit USDC to the L2.
     STARKWARE_CONTRACT.depositERC20(
         starkKey,
         USDC_ASSET_TYPE,
         positionId,
-        50
+        tokenToAmount
     );
 
     // Log the result.
@@ -132,9 +129,9 @@ contract CurrencyConvertor {
         exchangeWrapper,
         tokenFrom,
         tokenFromAmount,
-        50
+        tokenToAmount
     );
 
-    return 50;
+    return tokenToAmount;
   }
 }

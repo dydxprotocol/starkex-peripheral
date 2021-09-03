@@ -13,7 +13,12 @@
 
 pragma solidity ^0.8.0;
 
-
+/**
+ * @title I_StarkwareContract
+ * @author dYdX
+ *
+ * Interface for starkexex-contracts must pass in actual contract when calling CurrencyConvertorProxy.
+ */
 interface I_StarkwareContract {
 
   // ============ State-Changing Functions ============
@@ -28,15 +33,6 @@ interface I_StarkwareContract {
     */
     function depositERC20(
         uint256 starkKey,
-        uint256 assetType,
-        uint256 vaultId,
-        uint256 quantizedAmount
-    ) external;
-
-    function registerAndDepositERC20(
-        address ethKey,
-        uint256 starkKey,
-        bytes memory signature,
         uint256 assetType,
         uint256 vaultId,
         uint256 quantizedAmount
