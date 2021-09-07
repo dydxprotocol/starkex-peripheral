@@ -5,3 +5,4 @@
 /artifacts
 /src/types/
 .env
+coverage.json

@@ -1,5 +1,6 @@
 import { HardhatUserConfig } from "hardhat/types";
 
+import "solidity-coverage"
 import '@typechain/hardhat'
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";

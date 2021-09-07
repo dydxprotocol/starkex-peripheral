@@ -1,6 +1,7 @@
 import { ethers, waffle } from 'hardhat'
 import hre from 'hardhat';
 import '@nomiclabs/hardhat-ethers';
+import chaiAsPromised from 'chai-as-promised';
 
 
 import chai from "chai";
@@ -14,8 +15,12 @@ import { tokenAbi } from './abis';
 import { CurrencyConvertor } from '../src/types';
 import { MockStarkware } from '../src/types';
 import { ZeroExExchangeWrapper } from '../src/types';
+import _ from 'underscore';
+
 
 const { deployContract } = waffle
+const { expect } = chai;
+chai.use(chaiAsPromised)
 
 chai.use(solidity);
 
@@ -86,11 +91,12 @@ describe("CurrencyConvertor", () => {
             sellToken: usdcAddres,
             buyToken: uniswapAddress,
             sellAmount: '1',
+            slippagePercentage: 1.0,
           },
         ),
       });
 
-      await currencyConvertor.deposit(
+      const tx = await currencyConvertor.deposit(
         usdcAddres,
         '1000',
         zeroExExchangeWrapper.address,
@@ -98,6 +104,70 @@ describe("CurrencyConvertor", () => {
         '100000', // positionId
         encode(zeroExTransaction.to, zeroExTransaction.data),
       );
+
+      const blocks = await tx.wait();
+      const events = _.chain(blocks.events!)
+      .filter((e) => e.event === 'LogConvertedDeposit')
+      .value();
+
+      const event = events[0];
+      expect(event.args?.tokenFromAmount.toString()).to.equal('1000');
+      expect(event.args?.tokenFrom.toLowerCase()).to.equal(usdcAddres);
+    });
+
+    it("deposit USDC to Uniswap with invalid call data address", async () => {
+      const zeroExTransaction: any = await axiosRequest({
+        method: 'GET',
+        url: generateQueryPath(
+          'https://api.0x.org/swap/v1/quote',
+          {
+            sellToken: usdcAddres,
+            buyToken: uniswapAddress,
+            sellAmount: '1',
+            slippagePercentage: 1.0,
+          },
+        ),
+      });
+
+      try {
+        await currencyConvertor.deposit(
+          usdcAddres,
+          '1000',
+          zeroExExchangeWrapper.address,
+          '10000', // starkKey
+          '100000', // positionId
+          encode(zeroExTransaction.from, zeroExTransaction.data),
+        );
+      } catch (error) {
+        expect(error.reason).to.equal('invalid address (argument="address", value=undefined, code=INVALID_ARGUMENT, version=address/5.4.0)');
+      }
+    });
+
+    it("deposit USDC to Uniswap without enough funds", async () => {
+      const zeroExTransaction: any = await axiosRequest({
+        method: 'GET',
+        url: generateQueryPath(
+          'https://api.0x.org/swap/v1/quote',
+          {
+            sellToken: usdcAddres,
+            buyToken: uniswapAddress,
+            sellAmount: '10000000',
+            slippagePercentage: 1.0,
+          },
+        ),
+      });
+
+      try {
+        await currencyConvertor.deposit(
+          usdcAddres,
+          '1000',
+          zeroExExchangeWrapper.address,
+          '10000', // starkKey
+          '100000', // positionId
+          encode(zeroExTransaction.to, zeroExTransaction.data),
+        );
+      } catch (error) {
+      }
     });
   });
 });

@@ -84,30 +84,6 @@ contract ZeroExExchangeWrapper is I_ExchangeWrapper {
     }
 
     /**
-     * Get amount of takerToken required to buy a certain amount of makerToken for a given trade.
-     * Should match the takerToken amount used in exchangeForAmount. If the order cannot provide
-     * exactly desiredMakerToken, then it must return the price to buy the minimum amount greater
-     * than desiredMakerToken
-     *
-     * @param  makerToken         Address of makerToken, the token to receive
-     * @param  takerToken         Address of takerToken, the token to pay
-     * @param  desiredMakerToken  Amount of makerToken requested
-     * @param  orderData          Arbitrary bytes data for any information to pass to the exchange
-     * @return                    Amount of takerToken the needed to complete the exchange
-     */
-    function getExchangeCost(
-        IERC20 makerToken,
-        IERC20 takerToken,
-        uint256 desiredMakerToken,
-        bytes calldata orderData
-    )
-        external override
-        view
-        returns (uint256) {
-            return 0; // stubbed out for now and will potentially remove this method
-        }
-
-    /**
      * Convert bytes to an ethereum address
 
      * @param bys   Is total bytes array the address is prepended to
