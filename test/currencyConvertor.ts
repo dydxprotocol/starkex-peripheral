@@ -74,6 +74,8 @@ describe("CurrencyConvertor", () => {
     signer,
     );
 
+    console.log(await usdcContract.symbol());
+
     // approve ERC20 contracts
     await usdcContract.approve(
     currencyConvertor.address,
