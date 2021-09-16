@@ -16,7 +16,6 @@ pragma solidity ^0.8.0;
 import { I_ExchangeWrapper } from "../interfaces/I_ExchangeWrapper.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "hardhat/console.sol";
 
 /**
  * @title ZeroExExchangeWrapper
@@ -54,13 +53,12 @@ contract ZeroExExchangeWrapper is I_ExchangeWrapper {
         external override
         returns (uint256)
     {
-      address self = address(this);
       address exchange = bytesToAddress(orderData);
 
-      uint256 originalMakerBalance = makerToken.balanceOf(self);
+      uint256 originalMakerBalance = makerToken.balanceOf(address(this));
 
       // safe approve token if allowance is too low
-      if (takerToken.allowance(self, exchange) < requestedFillAmount) {
+      if (takerToken.allowance(address(this), exchange) < requestedFillAmount) {
         takerToken.safeApprove(exchange, type(uint256).max);
       }
 
@@ -69,18 +67,19 @@ contract ZeroExExchangeWrapper is I_ExchangeWrapper {
       require(success, string(returndata));
 
       // safe approve token if allowance is too low
-      if (makerToken.allowance(self, self) < requestedFillAmount) {
-        makerToken.safeApprove(self, type(uint256).max);
+      if (makerToken.allowance(address(this), address(this)) < requestedFillAmount) {
+        makerToken.safeApprove(address(this), type(uint256).max);
       }
 
       // transfer change in balance of makerToken to msg.sender
+      uint256 newMakerBalance = makerToken.balanceOf(address(this));
       makerToken.safeTransferFrom(
-        self,
+        address(this),
         msg.sender,
-        makerToken.balanceOf(self) - originalMakerBalance
+        newMakerBalance - originalMakerBalance
       );
 
-      return makerToken.balanceOf(self) - originalMakerBalance;
+      return newMakerBalance - originalMakerBalance;
     }
 
     /**

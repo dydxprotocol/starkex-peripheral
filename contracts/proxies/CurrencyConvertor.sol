@@ -40,17 +40,17 @@ contract CurrencyConvertor {
     // ============ Constructor ============
 
     constructor(
-        address starkwareContractAddress,
+        I_StarkwareContract starkwareContractAddress,
         IERC20 usdcAddress,
         uint256 usdcAssetType
     )
     {
-        STARKWARE_CONTRACT = I_StarkwareContract(starkwareContractAddress);
-        USDC_ADDRESS = IERC20(usdcAddress);
+        STARKWARE_CONTRACT = starkwareContractAddress;
+        USDC_ADDRESS = usdcAddress;
         USDC_ASSET_TYPE = usdcAssetType;
 
         // Set the allowance to the highest possible value.
-        IERC20(usdcAddress).safeApprove(starkwareContractAddress, type(uint256).max);
+        usdcAddress.safeApprove(address(starkwareContractAddress), type(uint256).max);
     }
 
   // ============ Events ============

@@ -92,18 +92,7 @@ describe("CurrencyConvertor", () => {
 
   describe("deposit", async () => {
     it("deposit USDT as USDC to Starkware", async () => {
-      const zeroExTransaction = (await axiosRequest({
-        method: 'GET',
-        url: generateQueryPath(
-          swapUrl,
-          {
-            sellToken: usdtTokenAddress,
-            buyToken: usdcAddress,
-            sellAmount: '100',
-            slippagePercentage: 1.0,
-          },
-        ),
-      })) as { to: string, data: string };
+      const zeroExTransaction = await zeroExRequest('100');
 
       // get old balances
       const userUsdtBalance: BigNumber = await usdtTokenContract.balanceOf(signer.address);
@@ -113,7 +102,7 @@ describe("CurrencyConvertor", () => {
 
       const tx = await currencyConvertor.deposit(
         usdtTokenAddress,
-        '1000000',
+        '100000',
         zeroExExchangeWrapper.address,
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
@@ -126,7 +115,7 @@ describe("CurrencyConvertor", () => {
       .value();
 
       const event = events[0];
-      expect(event.args?.tokenFromAmount.toString()).to.equal('1000000');
+      expect(event.args?.tokenFromAmount.toString()).to.equal('100000');
       expect(event.args?.tokenFrom.toLowerCase()).to.equal(usdtTokenAddress);
 
       // get new balances
@@ -136,22 +125,22 @@ describe("CurrencyConvertor", () => {
       )
 
       expect(newUserUsdtBalance.lt(userUsdtBalance)).to.be.true;
-      expect(newStarkwareUsdcBalance.gte(starkwareUsdcBalance)).to.be.true;
+      expect(newStarkwareUsdcBalance.gt(starkwareUsdcBalance)).to.be.true;
+
+      // deposit with approvals
+      const zeroExTransaction2 = await zeroExRequest('100');
+      await currencyConvertor.deposit(
+        usdtTokenAddress,
+        '100000',
+        zeroExExchangeWrapper.address,
+        starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
+        '22', // positionId
+        encode(zeroExTransaction2.to, zeroExTransaction2.data),
+      );
     });
 
     it("deposit USDT to USDC without enough funds", async () => {
-      const zeroExTransaction = (await axiosRequest({
-        method: 'GET',
-        url: generateQueryPath(
-          swapUrl,
-          {
-            sellToken: usdtTokenAddress,
-            buyToken: usdcAddress,
-            sellAmount: '10000000',
-            slippagePercentage: 1.0,
-          },
-        ),
-      })) as { to: string, data: string };
+      const zeroExTransaction = await zeroExRequest('1000000');
 
       await expect(currencyConvertor.deposit(
         usdtTokenAddress,
@@ -162,5 +151,33 @@ describe("CurrencyConvertor", () => {
         encode(zeroExTransaction.to, zeroExTransaction.data),
       )).to.be.reverted;
     });
+
+    it("deposit USDT to USDC with too small of swap", async () => {
+      const zeroExTransaction = await zeroExRequest('1');
+
+      await expect(currencyConvertor.deposit(
+        usdtTokenAddress,
+        '100000',
+        zeroExExchangeWrapper.address,
+        starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
+        '22', // positionId
+        encode(zeroExTransaction.to, zeroExTransaction.data),
+      )).to.be.reverted;
+    });
   });
 });
+
+async function zeroExRequest(sellAmount: string): Promise<{ to: string, data: string }> {
+  return axiosRequest({
+    method: 'GET',
+    url: generateQueryPath(
+      swapUrl,
+      {
+        sellAmount,
+        sellToken: usdtTokenAddress,
+        buyToken: usdcAddress,
+        slippagePercentage: 1.0,
+      },
+    ),
+  }) as Promise<{ to: string, data: string }>
+}
