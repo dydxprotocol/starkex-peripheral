@@ -19,7 +19,6 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { I_StarkwareContract } from "../interfaces/I_StarkwareContracts.sol";
 import { I_ExchangeWrapper } from "../interfaces/I_ExchangeWrapper.sol";
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /**
  * @title CurrencyConvertor
@@ -42,16 +41,13 @@ contract CurrencyConvertor {
 
     constructor(
         address starkwareContractAddress,
-        address usdcAddress,
+        IERC20 usdcAddress,
         uint256 usdcAssetType
     )
     {
         STARKWARE_CONTRACT = I_StarkwareContract(starkwareContractAddress);
         USDC_ADDRESS = IERC20(usdcAddress);
         USDC_ASSET_TYPE = usdcAssetType;
-
-        // safeApprove requires unsetting the allowance first.
-        IERC20(usdcAddress).safeApprove(address(this), 0);
 
         // Set the allowance to the highest possible value.
         IERC20(usdcAddress).safeApprove(starkwareContractAddress, type(uint256).max);
@@ -83,9 +79,9 @@ contract CurrencyConvertor {
     * @param  data             Trade parameters for the ExchangeWrapper.
     */
   function deposit(
-    address tokenFrom,
+    IERC20 tokenFrom,
     uint256 tokenFromAmount,
-    address exchangeWrapper,
+    I_ExchangeWrapper exchangeWrapper,
     uint256 starkKey,
     uint256 positionId,
     bytes calldata data
@@ -96,16 +92,14 @@ contract CurrencyConvertor {
     address self = address(this);
 
     // Send fromToken to this contract.
-    IERC20(tokenFrom).safeTransferFrom(
+    tokenFrom.safeTransferFrom(
       msg.sender,
-      self,
+      address(exchangeWrapper),
       tokenFromAmount
     );
 
     // Convert fromToken to toToken on the ExchangeWrapper.
-    IERC20(tokenFrom).safeApprove(exchangeWrapper, type(uint256).max);
-    I_ExchangeWrapper exchangeWrapperContract = I_ExchangeWrapper(exchangeWrapper);
-    uint256 tokenToAmount = exchangeWrapperContract.exchange(
+    uint256 tokenToAmount = exchangeWrapper.exchange(
         msg.sender,
         self,
         USDC_ADDRESS,
@@ -126,8 +120,8 @@ contract CurrencyConvertor {
     emit LogConvertedDeposit(
         self,
         msg.sender,
-        exchangeWrapper,
-        tokenFrom,
+        address(exchangeWrapper),
+        address(tokenFrom),
         tokenFromAmount,
         tokenToAmount
     );

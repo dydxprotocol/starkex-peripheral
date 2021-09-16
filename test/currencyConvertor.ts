@@ -7,16 +7,20 @@ import chaiAsPromised from 'chai-as-promised';
 import chai from "chai";
 import { solidity } from "ethereum-waffle";
 import CurrencyConvertorArtifact from '../artifacts/contracts/proxies/CurrencyConvertor.sol/CurrencyConvertor.json';
-import StarkwareArtifact from '../artifacts/contracts/mocks/Starkware.sol/MockStarkware.json';
 import ZeroExExchangeArtifact from '../artifacts/contracts/exchange-wrappers/zeroExExchangeWrapper.sol/zeroExExchangeWrapper.json';
-import { axiosRequest, encode, generateQueryPath } from './helpers';
-import { tokenAbi } from './abis';
+import {
+  axiosRequest,
+  encode,
+  generateQueryPath,
+  starkKeyToUint256,
+} from './helpers';
+import { erc20Abi } from './erc20';
 
 import { CurrencyConvertor } from '../src/types';
-import { MockStarkware } from '../src/types';
 import { ZeroExExchangeWrapper } from '../src/types';
 import _ from 'underscore';
-
+import { BigNumber } from 'ethers';
+import exp from 'constants';
 
 const { deployContract } = waffle
 const { expect } = chai;
@@ -24,15 +28,21 @@ chai.use(chaiAsPromised)
 
 chai.use(solidity);
 
-const impersonatedAccount: string = '0xf0b2e1362f2381686575265799c5215ef712162f';
-const usdcAddres: string = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
-const uniswapAddress: string = '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984';
+const impersonatedAccount: string = '0xd379eac1e2b1890fb83b8879dc8b2194477f24bc';
+const usdcAddress: string = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
+const usdtTokenAddress: string = '0xdac17f958d2ee523a2206206994597c13d831ec7';
+const starkwareContractAddress: string = '0xD54f502e184B6B739d7D27a6410a67dc462D69c8';
+const swapUrl: string = 'https://api.0x.org/swap/v1/quote';
+
 
 describe("CurrencyConvertor", () => {
   let currencyConvertor: CurrencyConvertor;
-  let starkware: MockStarkware;
   let zeroExExchangeWrapper: ZeroExExchangeWrapper;
-  beforeEach(async () => {
+  let usdcTokenContract: any;
+  let usdtTokenContract: any;
+  let signer: any;
+
+  before(async () => {
     // setup account
     await hre.network.provider.request({
       method: "hardhat_impersonateAccount",
@@ -45,21 +55,15 @@ describe("CurrencyConvertor", () => {
         "0x1000000000000000000",
       ],
     });
-    const signer = await ethers.getSigner(impersonatedAccount);
+    signer = await ethers.getSigner(impersonatedAccount);
 
-    // deploy contracts
-    starkware = await deployContract(
-      signer,
-      StarkwareArtifact,
-      [uniswapAddress],
-    ) as MockStarkware;
     currencyConvertor = await deployContract(
       signer,
       CurrencyConvertorArtifact,
       [
-        starkware.address,
-        uniswapAddress,
-        '1',
+        starkwareContractAddress,
+        usdcAddress,
+        '0x02893294412a4c8f915f75892b395ebbf6859ec246ec365c3b1f56f47c3a0a5d',
       ],
     ) as CurrencyConvertor;
     zeroExExchangeWrapper = await deployContract(
@@ -68,42 +72,51 @@ describe("CurrencyConvertor", () => {
     ) as ZeroExExchangeWrapper;
 
     // get ERC20 contracts
-    const usdcContract = new ethers.Contract(
-    usdcAddres,
-    tokenAbi,
-    signer,
+    usdtTokenContract = new ethers.Contract(
+      usdtTokenAddress,
+      erc20Abi,
+      signer,
+    );
+    usdcTokenContract = new ethers.Contract(
+      usdcAddress,
+      erc20Abi,
+      signer,
     );
 
-    console.log(await usdcContract.symbol());
-
     // approve ERC20 contracts
-    await usdcContract.approve(
-    currencyConvertor.address,
-    1000e6,
+    await usdtTokenContract.approve(
+      currencyConvertor.address,
+      100000000000,
     );
   });
 
   describe("deposit", async () => {
-    it("deposit USDC to Uniswap", async () => {
-      const zeroExTransaction: any = await axiosRequest({
+    it("deposit USDT as USDC to Starkware", async () => {
+      const zeroExTransaction = (await axiosRequest({
         method: 'GET',
         url: generateQueryPath(
-          'https://api.0x.org/swap/v1/quote',
+          swapUrl,
           {
-            sellToken: usdcAddres,
-            buyToken: uniswapAddress,
-            sellAmount: '1',
+            sellToken: usdtTokenAddress,
+            buyToken: usdcAddress,
+            sellAmount: '100',
             slippagePercentage: 1.0,
           },
         ),
-      });
+      })) as { to: string, data: string };
+
+      // get old balances
+      const userUsdtBalance: BigNumber = await usdtTokenContract.balanceOf(signer.address);
+      const starkwareUsdcBalance: BigNumber = await usdcTokenContract.balanceOf(
+        starkwareContractAddress,
+      )
 
       const tx = await currencyConvertor.deposit(
-        usdcAddres,
-        '1000',
+        usdtTokenAddress,
+        '1000000',
         zeroExExchangeWrapper.address,
-        '10000', // starkKey
-        '100000', // positionId
+        starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
+        '22', // positionId
         encode(zeroExTransaction.to, zeroExTransaction.data),
       );
 
@@ -113,63 +126,41 @@ describe("CurrencyConvertor", () => {
       .value();
 
       const event = events[0];
-      expect(event.args?.tokenFromAmount.toString()).to.equal('1000');
-      expect(event.args?.tokenFrom.toLowerCase()).to.equal(usdcAddres);
+      expect(event.args?.tokenFromAmount.toString()).to.equal('1000000');
+      expect(event.args?.tokenFrom.toLowerCase()).to.equal(usdtTokenAddress);
+
+      // get new balances
+      const newUserUsdtBalance: BigNumber = await usdtTokenContract.balanceOf(signer.address);
+      const newStarkwareUsdcBalance: BigNumber = await usdcTokenContract.balanceOf(
+        starkwareContractAddress,
+      )
+
+      expect(newUserUsdtBalance.lt(userUsdtBalance)).to.be.true;
+      expect(newStarkwareUsdcBalance.gte(starkwareUsdcBalance)).to.be.true;
     });
 
-    it("deposit USDC to Uniswap with invalid call data address", async () => {
-      const zeroExTransaction: any = await axiosRequest({
+    it("deposit USDT to USDC without enough funds", async () => {
+      const zeroExTransaction = (await axiosRequest({
         method: 'GET',
         url: generateQueryPath(
-          'https://api.0x.org/swap/v1/quote',
+          swapUrl,
           {
-            sellToken: usdcAddres,
-            buyToken: uniswapAddress,
-            sellAmount: '1',
-            slippagePercentage: 1.0,
-          },
-        ),
-      });
-
-      try {
-        await currencyConvertor.deposit(
-          usdcAddres,
-          '1000',
-          zeroExExchangeWrapper.address,
-          '10000', // starkKey
-          '100000', // positionId
-          encode(zeroExTransaction.from, zeroExTransaction.data),
-        );
-      } catch (error) {
-        expect(error.reason).to.equal('invalid address (argument="address", value=undefined, code=INVALID_ARGUMENT, version=address/5.4.0)');
-      }
-    });
-
-    it("deposit USDC to Uniswap without enough funds", async () => {
-      const zeroExTransaction: any = await axiosRequest({
-        method: 'GET',
-        url: generateQueryPath(
-          'https://api.0x.org/swap/v1/quote',
-          {
-            sellToken: usdcAddres,
-            buyToken: uniswapAddress,
+            sellToken: usdtTokenAddress,
+            buyToken: usdcAddress,
             sellAmount: '10000000',
             slippagePercentage: 1.0,
           },
         ),
-      });
+      })) as { to: string, data: string };
 
-      try {
-        await currencyConvertor.deposit(
-          usdcAddres,
-          '1000',
-          zeroExExchangeWrapper.address,
-          '10000', // starkKey
-          '100000', // positionId
-          encode(zeroExTransaction.to, zeroExTransaction.data),
-        );
-      } catch (error) {
-      }
+      await expect(currencyConvertor.deposit(
+        usdtTokenAddress,
+        '1',
+        zeroExExchangeWrapper.address,
+        starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
+        '22', // positionId
+        encode(zeroExTransaction.to, zeroExTransaction.data),
+      )).to.be.reverted;
     });
   });
 });

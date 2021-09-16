@@ -1,4 +1,4 @@
-export const tokenAbi = [
+export const erc20Abi = [
   {
       "constant": true,
       "inputs": [],

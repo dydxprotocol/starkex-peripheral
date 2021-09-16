@@ -16,6 +16,7 @@ pragma solidity ^0.8.0;
 import { I_ExchangeWrapper } from "../interfaces/I_ExchangeWrapper.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "hardhat/console.sol";
 
 /**
  * @title ZeroExExchangeWrapper
@@ -56,37 +57,36 @@ contract ZeroExExchangeWrapper is I_ExchangeWrapper {
       address self = address(this);
       address exchange = bytesToAddress(orderData);
 
-      uint256 originalTakerBalance = makerToken.balanceOf(self);
+      uint256 originalMakerBalance = makerToken.balanceOf(self);
 
-      // Send fromToken to this contract.
-      IERC20(takerToken).safeTransferFrom(
-        msg.sender,
-        self,
-        requestedFillAmount
-      );
+      // safe approve token if allowance is too low
+      if (takerToken.allowance(self, exchange) < requestedFillAmount) {
+        takerToken.safeApprove(exchange, type(uint256).max);
+      }
 
       // Swap token
-      IERC20(takerToken).safeApprove(exchange, type(uint256).max);
       (bool success, bytes memory returndata) = exchange.call(orderData[32:]);
       require(success, string(returndata));
 
-      // find change in balance of takerToken on this contract
-      uint256 takerBalanceChange= IERC20(makerToken).balanceOf(self) - originalTakerBalance;
+      // safe approve token if allowance is too low
+      if (makerToken.allowance(self, self) < requestedFillAmount) {
+        makerToken.safeApprove(self, type(uint256).max);
+      }
 
-      // transfer change in balance of takerToken to msg.sender
-      IERC20(makerToken).safeTransferFrom(
+      // transfer change in balance of makerToken to msg.sender
+      makerToken.safeTransferFrom(
         self,
         msg.sender,
-        takerBalanceChange
+        makerToken.balanceOf(self) - originalMakerBalance
       );
 
-      return takerBalanceChange;
+      return makerToken.balanceOf(self) - originalMakerBalance;
     }
 
     /**
-     * Convert bytes to an ethereum address
+     * Convert first 32 bytes of bys to an ethereum address
 
-     * @param bys   Is total bytes array the address is prepended to
+     * @param  bys  Is total bytes array the address is prepended to
      * @return addr The ethereum address
      */
     function bytesToAddress(bytes memory bys) private pure returns (address addr) {

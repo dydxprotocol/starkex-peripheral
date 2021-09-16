@@ -1,5 +1,6 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import { ethers } from 'hardhat'
+import BigNumber from 'bignumber.js';
 
 
 export async function axiosRequest(options: AxiosRequestConfig): Promise<unknown> {
@@ -19,7 +20,6 @@ export function generateQueryPath(url: string, params: {}): string {
 }
 
 export function encode(address: string, callData: string): string {
-
   const encodedAddress = ethers.utils.defaultAbiCoder.encode(
     ['address'],
     [address],
@@ -36,4 +36,10 @@ function stripHexPrefix(input: string) {
     return input.slice(2);
   }
   return input;
+}
+
+export function starkKeyToUint256(
+  starkKey: string,
+): string {
+  return new BigNumber(starkKey, 16).toFixed(0);
 }
