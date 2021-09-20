@@ -30,6 +30,23 @@ contract ZeroExExchangeWrapper is I_ExchangeWrapper {
     // ============ Public Functions ============
 
     /**
+    * Approve an exchange to swap an asset
+    *
+    * @param exchange Address of exchange that will be swapping a token
+    * @param token    Address of token that will be swapped by the exchange
+    */
+    function approveSwap(
+      address exchange,
+      IERC20 token
+    )
+      external
+    {
+      // safeApprove requires unsetting the allowance first.
+      token.safeApprove(exchange, 0);
+      token.safeApprove(exchange, type(uint256).max);
+    }
+
+    /**
      * Exchange some amount of takerToken for makerToken.
      *
      * @param  tradeOriginator      Address of the initiator of the trade (however, this value
@@ -57,29 +74,16 @@ contract ZeroExExchangeWrapper is I_ExchangeWrapper {
 
       uint256 originalMakerBalance = makerToken.balanceOf(address(this));
 
-      // safe approve token if allowance is too low
-      if (takerToken.allowance(address(this), exchange) < requestedFillAmount) {
-        takerToken.safeApprove(exchange, type(uint256).max);
-      }
-
       // Swap token
       (bool success, bytes memory returndata) = exchange.call(orderData[32:]);
       require(success, string(returndata));
 
-      // safe approve token if allowance is too low
-      if (makerToken.allowance(address(this), address(this)) < requestedFillAmount) {
-        makerToken.safeApprove(address(this), type(uint256).max);
-      }
-
       // transfer change in balance of makerToken to msg.sender
-      uint256 newMakerBalance = makerToken.balanceOf(address(this));
-      makerToken.safeTransferFrom(
-        address(this),
-        msg.sender,
-        newMakerBalance - originalMakerBalance
-      );
+      uint256 makerBalanceChange = makerToken.balanceOf(address(this)) - originalMakerBalance;
 
-      return newMakerBalance - originalMakerBalance;
+      makerToken.transfer(msg.sender, makerBalanceChange);
+
+      return makerBalanceChange;
     }
 
     /**
