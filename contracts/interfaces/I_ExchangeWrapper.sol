@@ -20,31 +20,31 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @title I_ExchangeWrapper
  * @author dYdX
  *
- * Interface that Exchange Wrappers for Starkex-Peripheral must implement in order to trade ERC20 tokens.
+ * Interface that Exchange Wrappers for Starkex-Peripheral must implement in order to trade ERC20 tokens
+ * for USDC.
  */
 interface I_ExchangeWrapper {
 
     // ============ Public Functions ============
 
+
     /**
-     * Exchange some amount of takerToken for makerToken.
+     * Exchange some amount of takerToken for USDC.
      *
-     * @param  tradeOriginator      Address of the initiator of the trade (however, this value
-     *                              cannot always be trusted as it is set at the discretion of the
-     *                              msg.sender)
-     * @param  receiver             Address to set allowance on once the trade has completed
-     * @param  makerToken           Address of makerToken, the token to receive
-     * @param  takerToken           Address of takerToken, the token to pay
-     * @param  requestedFillAmount  Amount of takerToken being paid
-     * @param  orderData            Arbitrary bytes data for any information to pass to the exchange
-     * @return                      The amount of makerToken received
+     * @param  takerToken           Address of takerToken, the token to pay.
+     * @param  requestedFillAmount  Amount of takerToken being paid.
+     * @param  starkKey             The starkKey of the L2 account to deposit into.
+     * @param  positionId           The positionId of the L2 account to deposit into.
+     * @param  exchange             The exchange being used to swap the taker token for USDC.
+     * @param  orderData            Arbitrary bytes data for any information to pass to the exchange.
+     * @return                      The amount of makerToken received.
      */
     function exchange(
-        address tradeOriginator,
-        address receiver,
-        IERC20 makerToken,
         IERC20 takerToken,
+        uint256 starkKey,
+        uint256 positionId,
         uint256 requestedFillAmount,
+        address exchange,
         bytes calldata orderData
     )
         external

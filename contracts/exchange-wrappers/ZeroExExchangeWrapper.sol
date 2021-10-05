@@ -15,6 +15,7 @@ pragma solidity ^0.8.0;
 
 import { I_ExchangeWrapper } from "../interfaces/I_ExchangeWrapper.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { I_StarkwareContract } from "../interfaces/I_StarkwareContracts.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
@@ -25,6 +26,30 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  */
 contract ZeroExExchangeWrapper is I_ExchangeWrapper {
     using SafeERC20 for IERC20;
+
+    // ============ State Variables ============
+
+    IERC20 immutable USDC_ADDRESS;
+
+    uint256 immutable USDC_ASSET_TYPE;
+
+    I_StarkwareContract public immutable STARKWARE_CONTRACT;
+
+    // ============ Constructor ============
+
+    constructor(
+        I_StarkwareContract starkwareContractAddress,
+        IERC20 usdcAddress,
+        uint256 usdcAssetType
+    )
+    {
+        STARKWARE_CONTRACT = starkwareContractAddress;
+        USDC_ADDRESS = usdcAddress;
+        USDC_ASSET_TYPE = usdcAssetType;
+
+        // Set the allowance to the highest possible value.
+        usdcAddress.safeApprove(address(starkwareContractAddress), type(uint256).max);
+    }
 
 
     // ============ Public Functions ============
@@ -47,54 +72,45 @@ contract ZeroExExchangeWrapper is I_ExchangeWrapper {
     }
 
     /**
-     * Exchange some amount of takerToken for makerToken.
+     * Exchange some amount of takerToken for USDC.
      *
-     * @param  tradeOriginator      Address of the initiator of the trade (however, this value
-     *                              cannot always be trusted as it is set at the discretion of the
-     *                              msg.sender)
-     * @param  receiver             Address to set allowance on once the trade has completed
-     * @param  makerToken           Address of makerToken, the token to receive
-     * @param  takerToken           Address of takerToken, the token to pay
-     * @param  requestedFillAmount  Amount of takerToken being paid
-     * @param  orderData            Arbitrary bytes data for any information to pass to the exchange
-     * @return                      The amount of makerToken received
+
+     * @param  takerToken           Address of takerToken, the token to pay.
+     * @param  requestedFillAmount  Amount of takerToken being paid.
+     * @param  starkKey             The starkKey of the L2 account to deposit into.
+     * @param  positionId           The positionId of the L2 account to deposit into.
+     * @param  exchange             The exchange being used to swap the taker token for USDC.
+     * @param  orderData            Arbitrary bytes data for any information to pass to the exchange.
+     * @return                      The amount of makerToken received.
      */
     function exchange(
-        address tradeOriginator,
-        address receiver,
-        IERC20 makerToken,
         IERC20 takerToken,
+        uint256 starkKey,
+        uint256 positionId,
         uint256 requestedFillAmount,
+        address exchange,
         bytes calldata orderData
     )
         external override
         returns (uint256)
     {
-      address exchange = bytesToAddress(orderData);
-
-      uint256 originalMakerBalance = makerToken.balanceOf(address(this));
+      uint256 originalMakerBalance = USDC_ADDRESS.balanceOf(address(this));
 
       // Swap token
-      (bool success, bytes memory returndata) = exchange.call(orderData[32:]);
+      (bool success, bytes memory returndata) = exchange.call(orderData);
       require(success, string(returndata));
 
       // transfer change in balance of makerToken to msg.sender
-      uint256 makerBalanceChange = makerToken.balanceOf(address(this)) - originalMakerBalance;
+      uint256 makerBalanceChange = USDC_ADDRESS.balanceOf(address(this)) - originalMakerBalance;
 
-      makerToken.transfer(msg.sender, makerBalanceChange);
+      // Deposit USDC to the L2.
+      STARKWARE_CONTRACT.depositERC20(
+          starkKey,
+          USDC_ASSET_TYPE,
+          positionId,
+          makerBalanceChange
+      );
 
       return makerBalanceChange;
-    }
-
-    /**
-     * Convert first 32 bytes of bys to an ethereum address
-
-     * @param  bys  Is total bytes array the address is prepended to
-     * @return addr The ethereum address
-     */
-    function bytesToAddress(bytes memory bys) private pure returns (address addr) {
-        assembly {
-          addr := mload(add(bys,32))
-        }
     }
 }

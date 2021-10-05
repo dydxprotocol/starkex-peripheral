@@ -17,7 +17,6 @@ pragma experimental ABIEncoderV2;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { I_StarkwareContract } from "../interfaces/I_StarkwareContracts.sol";
 import { I_ExchangeWrapper } from "../interfaces/I_ExchangeWrapper.sol";
 
 /**
@@ -28,30 +27,6 @@ import { I_ExchangeWrapper } from "../interfaces/I_ExchangeWrapper.sol";
  */
 contract CurrencyConvertor {
     using SafeERC20 for IERC20;
-
-    // ============ State Variables ============
-
-    IERC20 immutable USDC_ADDRESS;
-
-    uint256 immutable USDC_ASSET_TYPE;
-
-    I_StarkwareContract public immutable STARKWARE_CONTRACT;
-
-    // ============ Constructor ============
-
-    constructor(
-        I_StarkwareContract starkwareContractAddress,
-        IERC20 usdcAddress,
-        uint256 usdcAssetType
-    )
-    {
-        STARKWARE_CONTRACT = starkwareContractAddress;
-        USDC_ADDRESS = usdcAddress;
-        USDC_ASSET_TYPE = usdcAssetType;
-
-        // Set the allowance to the highest possible value.
-        usdcAddress.safeApprove(address(starkwareContractAddress), type(uint256).max);
-    }
 
   // ============ Events ============
 
@@ -76,6 +51,7 @@ contract CurrencyConvertor {
     * @param  exchangeWrapper  The ExchangeWrapper contract to trade with.
     * @param  starkKey         The starkKey of the L2 account to deposit into.
     * @param  positionId       The positionId of the L2 account to deposit into.
+    * @param  exchange         The exchange being used to swap the taker token for USDC.
     * @param  data             Trade parameters for the ExchangeWrapper.
     */
   function deposit(
@@ -84,6 +60,7 @@ contract CurrencyConvertor {
     I_ExchangeWrapper exchangeWrapper,
     uint256 starkKey,
     uint256 positionId,
+    address exchange,
     bytes calldata data
   )
     external
@@ -100,20 +77,12 @@ contract CurrencyConvertor {
 
     // Convert fromToken to toToken on the ExchangeWrapper.
     uint256 tokenToAmount = exchangeWrapper.exchange(
-        msg.sender,
-        self,
-        USDC_ADDRESS,
         IERC20(tokenFrom),
-        tokenFromAmount,
-        data
-    );
-
-    // Deposit USDC to the L2.
-    STARKWARE_CONTRACT.depositERC20(
         starkKey,
-        USDC_ASSET_TYPE,
         positionId,
-        tokenToAmount
+        tokenFromAmount,
+        exchange,
+        data
     );
 
     // Log the result.
