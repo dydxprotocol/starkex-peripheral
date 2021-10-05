@@ -81,7 +81,7 @@ contract ZeroExExchangeWrapper is I_ExchangeWrapper {
      * @param  positionId           The positionId of the L2 account to deposit into.
      * @param  exchange             The exchange being used to swap the taker token for USDC.
      * @param  orderData            Arbitrary bytes data for any information to pass to the exchange.
-     * @return                      The amount of makerToken received.
+     * @return                      The amount of USDC deposited to the StarkEx Deposit Contract.
      */
     function exchange(
         IERC20 takerToken,
@@ -94,23 +94,23 @@ contract ZeroExExchangeWrapper is I_ExchangeWrapper {
         external override
         returns (uint256)
     {
-      uint256 originalMakerBalance = USDC_ADDRESS.balanceOf(address(this));
+      uint256 originalUsdcBalance = USDC_ADDRESS.balanceOf(address(this));
 
       // Swap token
       (bool success, bytes memory returndata) = exchange.call(orderData);
       require(success, string(returndata));
 
-      // transfer change in balance of makerToken to msg.sender
-      uint256 makerBalanceChange = USDC_ADDRESS.balanceOf(address(this)) - originalMakerBalance;
+      // transfer change in balance of USDC to msg.sender
+      uint256 usdcBalanceChange = USDC_ADDRESS.balanceOf(address(this)) - originalUsdcBalance;
 
       // Deposit USDC to the L2.
       STARKWARE_CONTRACT.depositERC20(
           starkKey,
           USDC_ASSET_TYPE,
           positionId,
-          makerBalanceChange
+          usdcBalanceChange
       );
 
-      return makerBalanceChange;
+      return usdcBalanceChange;
     }
 }

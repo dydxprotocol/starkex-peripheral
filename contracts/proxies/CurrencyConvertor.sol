@@ -23,7 +23,7 @@ import { I_ExchangeWrapper } from "../interfaces/I_ExchangeWrapper.sol";
  * @title CurrencyConvertor
  * @author dYdX
  *
- * Contract for depositing and withdrawaing to dYdX L2 in non-USDC tokens.
+ * Contract for depositing and withdrawing to dYdX L2 in non-USDC tokens.
  */
 contract CurrencyConvertor {
     using SafeERC20 for IERC20;

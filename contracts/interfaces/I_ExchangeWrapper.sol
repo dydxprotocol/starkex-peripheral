@@ -37,7 +37,7 @@ interface I_ExchangeWrapper {
      * @param  positionId           The positionId of the L2 account to deposit into.
      * @param  exchange             The exchange being used to swap the taker token for USDC.
      * @param  orderData            Arbitrary bytes data for any information to pass to the exchange.
-     * @return                      The amount of makerToken received.
+     * @return                      The amount of USDC deposited to the StarkEx Deposit Contract.
      */
     function exchange(
         IERC20 takerToken,

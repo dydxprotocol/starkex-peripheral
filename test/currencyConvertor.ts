@@ -20,19 +20,19 @@ import { ZeroExExchangeWrapper } from '../src/types';
 import _ from 'underscore';
 import { BigNumber } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import {
+  impersonatedAccount,
+  starkwareContractAddress,
+  usdcAddress,
+  usdtTokenAddress,
+  swapUrl,
+} from './constants';
 
 const { deployContract } = waffle
 const { expect } = chai;
 chai.use(chaiAsPromised)
 
 chai.use(solidity);
-
-const impersonatedAccount: string = '0xd379eac1e2b1890fb83b8879dc8b2194477f24bc';
-const usdcAddress: string = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
-const usdtTokenAddress: string = '0xdac17f958d2ee523a2206206994597c13d831ec7';
-const starkwareContractAddress: string = '0xD54f502e184B6B739d7D27a6410a67dc462D69c8';
-const swapUrl: string = 'https://api.0x.org/swap/v1/quote';
-
 
 describe("CurrencyConvertor", () => {
   let currencyConvertor: CurrencyConvertor;
@@ -130,7 +130,7 @@ describe("CurrencyConvertor", () => {
       const newUserUsdtBalance: BigNumber = await usdtTokenContract.balanceOf(signer.address);
       const newStarkwareUsdcBalance: BigNumber = await usdcTokenContract.balanceOf(
         starkwareContractAddress,
-      )
+      );
 
       expect(newUserUsdtBalance.lt(userUsdtBalance)).to.be.true;
       expect(newStarkwareUsdcBalance.gt(starkwareUsdcBalance)).to.be.true;
@@ -177,6 +177,21 @@ describe("CurrencyConvertor", () => {
         zeroExTransaction.data,
       )).to.be.reverted; //  �y� % UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT
     });
+
+    it("deposit USDT as USDC to Starkware but starkKey is invalid", async () => {
+      const zeroExTransaction = await zeroExRequest('100');
+
+      await zeroExExchangeWrapper.approveSwap(zeroExTransaction.to, usdtTokenAddress);
+      await expect(currencyConvertor.deposit(
+        usdtTokenAddress,
+        '100000',
+        zeroExExchangeWrapper.address,
+        starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f90'),
+        '22', // positionId
+        ethers.utils.getAddress(zeroExTransaction.to),
+        zeroExTransaction.data,
+      )).to.be.revertedWith('INVALID_STARK_KEY');
+    });
   });
 });
 
@@ -192,5 +207,5 @@ async function zeroExRequest(sellAmount: string): Promise<{ to: string, data: st
         slippagePercentage: 1.0,
       },
     ),
-  }) as Promise<{ to: string, data: string }>
+  }) as Promise<{ to: string, data: string }>;
 }
