@@ -7,7 +7,6 @@ import chaiAsPromised from 'chai-as-promised';
 import chai from "chai";
 import { solidity } from "ethereum-waffle";
 import CurrencyConvertorArtifact from '../artifacts/contracts/proxies/CurrencyConvertor.sol/CurrencyConvertor.json';
-import ZeroExExchangeArtifact from '../artifacts/contracts/exchange-wrappers/zeroExExchangeWrapper.sol/zeroExExchangeWrapper.json';
 import {
   axiosRequest,
   generateQueryPath,
@@ -16,7 +15,6 @@ import {
 import { erc20Abi } from './erc20';
 
 import { CurrencyConvertor, ERC20 } from '../src/types';
-import { ZeroExExchangeWrapper } from '../src/types';
 import _ from 'underscore';
 import { BigNumber } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -36,7 +34,6 @@ chai.use(solidity);
 
 describe("CurrencyConvertor", () => {
   let currencyConvertor: CurrencyConvertor;
-  let zeroExExchangeWrapper: ZeroExExchangeWrapper;
   let usdcTokenContract: ERC20;
   let usdtTokenContract: ERC20;
   let signer: SignerWithAddress;
@@ -59,16 +56,12 @@ describe("CurrencyConvertor", () => {
     currencyConvertor = await deployContract(
       signer,
       CurrencyConvertorArtifact,
-    ) as CurrencyConvertor;
-    zeroExExchangeWrapper = await deployContract(
-      signer,
-      ZeroExExchangeArtifact,
       [
         starkwareContractAddress,
         usdcAddress,
         '0x02893294412a4c8f915f75892b395ebbf6859ec246ec365c3b1f56f47c3a0a5d',
       ],
-    ) as ZeroExExchangeWrapper;
+    ) as CurrencyConvertor;
 
     // get ERC20 contracts
     usdtTokenContract = new ethers.Contract(
@@ -106,11 +99,11 @@ describe("CurrencyConvertor", () => {
         starkwareContractAddress,
       )
 
-      await zeroExExchangeWrapper.approveSwap(zeroExTransaction.to, usdtTokenAddress);
+      await currencyConvertor.approveSwap(zeroExTransaction.to, usdtTokenAddress);
       const tx = await currencyConvertor.deposit(
         usdtTokenAddress,
         '100000',
-        zeroExExchangeWrapper.address,
+        '1',
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         ethers.utils.getAddress(zeroExTransaction.to),
@@ -140,7 +133,7 @@ describe("CurrencyConvertor", () => {
       await currencyConvertor.deposit(
         usdtTokenAddress,
         '100000',
-        zeroExExchangeWrapper.address,
+        '1',
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         ethers.utils.getAddress(zeroExTransaction.to),
@@ -151,11 +144,11 @@ describe("CurrencyConvertor", () => {
     it("deposit USDT to USDC without enough funds", async () => {
       const zeroExTransaction = await zeroExRequest('1000000');
 
-      await zeroExExchangeWrapper.approveSwap(zeroExTransaction.to, usdtTokenAddress);
+      await currencyConvertor.approveSwap(zeroExTransaction.to, usdtTokenAddress);
       await expect(currencyConvertor.deposit(
         usdtTokenAddress,
         '1',
-        zeroExExchangeWrapper.address,
+        '1',
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         ethers.utils.getAddress(zeroExTransaction.to),
@@ -166,11 +159,11 @@ describe("CurrencyConvertor", () => {
     it("deposit USDT to USDC with too small of swap", async () => {
       const zeroExTransaction = await zeroExRequest('1000000');
 
-      await zeroExExchangeWrapper.approveSwap(zeroExTransaction.to, usdtTokenAddress);
+      await currencyConvertor.approveSwap(zeroExTransaction.to, usdtTokenAddress);
       await expect(currencyConvertor.deposit(
         usdtTokenAddress,
         '100000',
-        zeroExExchangeWrapper.address,
+        '1',
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         ethers.utils.getAddress(zeroExTransaction.to),
@@ -181,16 +174,31 @@ describe("CurrencyConvertor", () => {
     it("deposit USDT as USDC to Starkware but starkKey is invalid", async () => {
       const zeroExTransaction = await zeroExRequest('100');
 
-      await zeroExExchangeWrapper.approveSwap(zeroExTransaction.to, usdtTokenAddress);
+      await currencyConvertor.approveSwap(zeroExTransaction.to, usdtTokenAddress);
       await expect(currencyConvertor.deposit(
         usdtTokenAddress,
         '100000',
-        zeroExExchangeWrapper.address,
+        '1',
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f90'),
         '22', // positionId
         ethers.utils.getAddress(zeroExTransaction.to),
         zeroExTransaction.data,
       )).to.be.revertedWith('INVALID_STARK_KEY');
+    });
+
+    it("deposit USDT as USDC to Starkware but swap is less than limit amount", async () => {
+      const zeroExTransaction = await zeroExRequest('100');
+
+      await currencyConvertor.approveSwap(zeroExTransaction.to, usdtTokenAddress);
+      await expect(currencyConvertor.deposit(
+        usdtTokenAddress,
+        '100000',
+        '100000',
+        starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
+        '22', // positionId
+        ethers.utils.getAddress(zeroExTransaction.to),
+        zeroExTransaction.data,
+      )).to.be.revertedWith('Would swap less than limin token to amount');
     });
   });
 });
