@@ -100,7 +100,7 @@ describe("CurrencyConvertor", () => {
       )
 
       await currencyConvertor.approveSwap(zeroExTransaction.to, usdtTokenAddress);
-      const tx = await currencyConvertor.deposit(
+      const tx = await currencyConvertor.depositERC20(
         usdtTokenAddress,
         '100000',
         '1',
@@ -130,7 +130,7 @@ describe("CurrencyConvertor", () => {
 
       // deposit with approvals
       const zeroExTransaction2 = await zeroExRequest('100');
-      await currencyConvertor.deposit(
+      await currencyConvertor.depositERC20(
         usdtTokenAddress,
         '100000',
         '1',
@@ -141,11 +141,49 @@ describe("CurrencyConvertor", () => {
       );
     });
 
+    it("deposit USDT as USDC in one wrapped transaction", async () => {
+      const zeroExTransaction = await zeroExRequest('100');
+
+      // get old balances
+      const userUsdtBalance: BigNumber = await usdtTokenContract.balanceOf(signer.address);
+      const starkwareUsdcBalance: BigNumber = await usdcTokenContract.balanceOf(
+        starkwareContractAddress,
+      )
+
+      const tx = await currencyConvertor.approveSwapAndDepositERC20(
+        usdtTokenAddress,
+        '100000',
+        '1',
+        starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
+        '22', // positionId
+        ethers.utils.getAddress(zeroExTransaction.to),
+        zeroExTransaction.data,
+      );
+
+      const blocks = await tx.wait();
+      const events = _.chain(blocks.events!)
+      .filter((e) => e.event === 'LogConvertedDeposit')
+      .value();
+
+      const event = events[0];
+      expect(event.args?.tokenFromAmount.toString()).to.equal('100000');
+      expect(event.args?.tokenFrom.toLowerCase()).to.equal(usdtTokenAddress);
+
+      // get new balances
+      const newUserUsdtBalance: BigNumber = await usdtTokenContract.balanceOf(signer.address);
+      const newStarkwareUsdcBalance: BigNumber = await usdcTokenContract.balanceOf(
+        starkwareContractAddress,
+      );
+
+      expect(newUserUsdtBalance.lt(userUsdtBalance)).to.be.true;
+      expect(newStarkwareUsdcBalance.gt(starkwareUsdcBalance)).to.be.true;
+    });
+
     it("deposit USDT to USDC without enough funds", async () => {
       const zeroExTransaction = await zeroExRequest('1000000');
 
       await currencyConvertor.approveSwap(zeroExTransaction.to, usdtTokenAddress);
-      await expect(currencyConvertor.deposit(
+      await expect(currencyConvertor.depositERC20(
         usdtTokenAddress,
         '1',
         '1',
@@ -160,7 +198,7 @@ describe("CurrencyConvertor", () => {
       const zeroExTransaction = await zeroExRequest('1000000');
 
       await currencyConvertor.approveSwap(zeroExTransaction.to, usdtTokenAddress);
-      await expect(currencyConvertor.deposit(
+      await expect(currencyConvertor.depositERC20(
         usdtTokenAddress,
         '100000',
         '1',
@@ -175,7 +213,7 @@ describe("CurrencyConvertor", () => {
       const zeroExTransaction = await zeroExRequest('100');
 
       await currencyConvertor.approveSwap(zeroExTransaction.to, usdtTokenAddress);
-      await expect(currencyConvertor.deposit(
+      await expect(currencyConvertor.depositERC20(
         usdtTokenAddress,
         '100000',
         '1',
@@ -190,7 +228,7 @@ describe("CurrencyConvertor", () => {
       const zeroExTransaction = await zeroExRequest('100');
 
       await currencyConvertor.approveSwap(zeroExTransaction.to, usdtTokenAddress);
-      await expect(currencyConvertor.deposit(
+      await expect(currencyConvertor.depositERC20(
         usdtTokenAddress,
         '100000',
         '100000',
@@ -198,7 +236,7 @@ describe("CurrencyConvertor", () => {
         '22', // positionId
         ethers.utils.getAddress(zeroExTransaction.to),
         zeroExTransaction.data,
-      )).to.be.revertedWith('Would swap less than limin token to amount');
+      )).to.be.revertedWith('Received USDC is less than minUsdcAmount');
     });
   });
 });

@@ -36,7 +36,7 @@ interface I_StarkwareContract {
     * @param  vaultId         The L2 id to deposit into
     * @param  quantizedAmount The quantized amount being deposited
     */
-    function depositERC20(
+    function deposit(
       uint256 starkKey,
       uint256 assetType,
       uint256 vaultId,

@@ -60,10 +60,9 @@ contract CurrencyConvertor {
 
   event LogConvertedDeposit(
     address indexed sender,
-    address source,
     address tokenFrom,
     uint256 tokenFromAmount,
-    uint256 tokenToAmount
+    uint256 usdcAmount
   );
 
   // ============ State-Changing Functions ============
@@ -78,7 +77,7 @@ contract CurrencyConvertor {
     address exchange,
     IERC20 token
   )
-    external
+    public
   {
     // safeApprove requires unsetting the allowance first.
     token.safeApprove(exchange, 0);
@@ -87,27 +86,28 @@ contract CurrencyConvertor {
 
   /**
     * @notice Make a deposit to the Starkware Layer2 Solution, after converting funds to USDC.
-    *  Funds will be withdrawn from the sender and deposited into the StarkWare Layer2 to the starkKey.
+    *  Funds will be withdrawn from the sender and USDC will be deposited into the trading account
+    *  specified by the starkKey and positionId.
     * @dev Emits LogConvertedDeposit event.
     *
-    * @param  tokenFrom          The token to convert from.
+    * @param  tokenFrom          The ERC20 token to convert from.
     * @param  tokenFromAmount    The amount of `tokenFrom` tokens to deposit.
-    * @param  limitTokenToAmount The minimum tokenToAmount the user will accept in a swap.
+    * @param  minUsdcAmount      The minimum USDC amount the user will accept in a swap.
     * @param  starkKey           The starkKey of the L2 account to deposit into.
     * @param  positionId         The positionId of the L2 account to deposit into.
     * @param  exchange           The exchange being used to swap the taker token for USDC.
-    * @param  data               Trade parameters for the ExchangeWrapper.
+    * @param  data               Trade parameters for the exchange.
     */
-  function deposit(
+  function depositERC20(
     IERC20 tokenFrom,
     uint256 tokenFromAmount,
-    uint256 limitTokenToAmount,
+    uint256 minUsdcAmount,
     uint256 starkKey,
     uint256 positionId,
     address exchange,
     bytes calldata data
   )
-    external
+    public
     returns (uint256)
   {
     // Send fromToken to this contract.
@@ -123,13 +123,13 @@ contract CurrencyConvertor {
     (bool success, bytes memory returndata) = exchange.call(data);
     require(success, string(returndata));
 
-    // transfer change in balance of USDC to msg.sender
+    // Deposit change in balance of USDC to the L2 exchange account of the sender.
     uint256 usdcBalanceChange = USDC_ADDRESS.balanceOf(address(this)) - originalUsdcBalance;
 
-    require(usdcBalanceChange >= limitTokenToAmount, 'Would swap less than limin token to amount');
+    require(usdcBalanceChange >= minUsdcAmount, 'Received USDC is less than minUsdcAmount');
 
     // Deposit USDC to the L2.
-    STARKWARE_CONTRACT.depositERC20(
+    STARKWARE_CONTRACT.deposit(
       starkKey,
       USDC_ASSET_TYPE,
       positionId,
@@ -146,5 +146,41 @@ contract CurrencyConvertor {
     );
 
     return usdcBalanceChange;
+  }
+
+    /**
+    * @notice Approve the token to swap and then makes a deposit with said token.
+    * @dev Emits LogConvertedDeposit event.
+    *
+    * @param  tokenFrom          The token to convert from.
+    * @param  tokenFromAmount    The amount of `tokenFrom` tokens to deposit.
+    * @param  minUsdcAmount      The minimum USDC amount the user will accept in a swap.
+    * @param  starkKey           The starkKey of the L2 account to deposit into.
+    * @param  positionId         The positionId of the L2 account to deposit into.
+    * @param  exchange           The exchange being used to swap the taker token for USDC.
+    * @param  data               Trade parameters for the exchange.
+    */
+  function approveSwapAndDepositERC20(
+    IERC20 tokenFrom,
+    uint256 tokenFromAmount,
+    uint256 minUsdcAmount,
+    uint256 starkKey,
+    uint256 positionId,
+    address exchange,
+    bytes calldata data
+  )
+    external
+    returns (uint256)
+  {
+    approveSwap(exchange, tokenFrom);
+    return depositERC20(
+      tokenFrom,
+      tokenFromAmount,
+      minUsdcAmount,
+      starkKey,
+      positionId,
+      exchange,
+      data
+    );
   }
 }
