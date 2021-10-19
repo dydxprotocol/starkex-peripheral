@@ -3,4 +3,6 @@
 /node_modules/
 /cache/
 /artifacts
-/src/typess/
+/src/types/
+.env
+coverage.json

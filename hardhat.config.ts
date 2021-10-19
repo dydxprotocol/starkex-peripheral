@@ -1,11 +1,21 @@
 import { HardhatUserConfig } from "hardhat/types";
 
+import "solidity-coverage"
 import '@typechain/hardhat'
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 
+require('dotenv').config()
+
 const config: HardhatUserConfig = {
-  defaultNetwork: "hardhat",
+  networks: {
+    hardhat: {
+      forking: {
+        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
+        blockNumber: 13134882
+      }
+    }
+  },
   solidity: {
     compilers: [{ version: "0.8.0", settings: { optimizer: {enabled: true, runs: 200} } }],
   },
