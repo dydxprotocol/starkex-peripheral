@@ -3,7 +3,8 @@
   "scripts": {
     "build": "npx hardhat compile",
     "test": "npx hardhat test",
-    "coverage": "npx hardhat coverage"
+    "coverage": "npx hardhat coverage",
+    "deploy": "npx hardhat run --network"
   },
   "dependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
