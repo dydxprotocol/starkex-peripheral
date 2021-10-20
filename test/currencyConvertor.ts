@@ -24,6 +24,7 @@ import {
   usdcAddress,
   usdtTokenAddress,
   swapUrl,
+  ethPlaceholderAddress,
 } from './constants';
 
 const { deployContract } = waffle
@@ -60,6 +61,7 @@ describe("CurrencyConvertor", () => {
         starkwareContractAddress,
         usdcAddress,
         '0x02893294412a4c8f915f75892b395ebbf6859ec246ec365c3b1f56f47c3a0a5d',
+        ethPlaceholderAddress,
       ],
     ) as CurrencyConvertor;
 
@@ -77,6 +79,10 @@ describe("CurrencyConvertor", () => {
 
     // approve ERC20 contracts
     await usdtTokenContract.approve(
+      currencyConvertor.address,
+      100000000000,
+    );
+    await usdcTokenContract.approve(
       currencyConvertor.address,
       100000000000,
     );
@@ -177,6 +183,61 @@ describe("CurrencyConvertor", () => {
 
       expect(newUserUsdtBalance.lt(userUsdtBalance)).to.be.true;
       expect(newStarkwareUsdcBalance.gt(starkwareUsdcBalance)).to.be.true;
+    });
+
+    it("deposit ETH as USDC to Starkware", async () => {
+      const zeroExTransaction = await axiosRequest({
+        method: 'GET',
+        url: generateQueryPath(
+          swapUrl,
+          {
+            buyAmount: 1,
+            sellToken: 'ETH',
+            buyToken: usdcAddress,
+          },
+        ),
+      }) as { to: string, data: string };
+
+      // get old balances
+      const userETHBalance: BigNumber = await signer.getBalance();
+      const starkwareUsdcBalance: BigNumber = await usdcTokenContract.balanceOf(
+        starkwareContractAddress,
+      )
+
+      const tx = await currencyConvertor.depositEth(
+        '1',
+        starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
+        '22', // positionId
+        ethers.utils.getAddress(zeroExTransaction.to),
+        zeroExTransaction.data,
+        { value: 24428672000000 },
+      );
+
+      const blocks = await tx.wait();
+      const events = _.chain(blocks.events!)
+      .filter((e) => e.event === 'LogConvertedDeposit')
+      .value();
+
+      const event = events[0];
+      expect(event.args?.tokenFromAmount.toString()).to.equal('100000');
+      // expect(event.args?.tokenFrom.toLowerCase()).to.equal('eth');
+
+      // get new balances
+      const newUserETHBalance: BigNumber = await signer.getBalance();
+      const newStarkwareUsdcBalance: BigNumber = await usdcTokenContract.balanceOf(
+        starkwareContractAddress,
+      );
+
+      expect(newUserETHBalance.lt(userETHBalance)).to.be.true;
+      expect(newStarkwareUsdcBalance.gt(starkwareUsdcBalance)).to.be.true;
+    });
+
+    it("directly deposit USDC", async () => {
+      await currencyConvertor.deposit(
+        '1',
+        starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
+        '22', // positionId
+      );
     });
 
     it("deposit USDT to USDC without enough funds", async () => {
