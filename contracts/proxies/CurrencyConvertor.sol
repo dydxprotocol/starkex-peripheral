@@ -40,21 +40,19 @@ contract CurrencyConvertor is BaseRelayRecipient {
 
   uint256 immutable USDC_ASSET_TYPE;
 
-  address immutable ETH_PLACEHOLDER_ADDRESS;
+  address immutable ETH_PLACEHOLDER_ADDRESS = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
 
   // ============ Constructor ============
 
   constructor(
     I_StarkwareContract starkwareContractAddress,
     IERC20 usdcAddress,
-    uint256 usdcAssetType,
-    address ethPlaceholderAddress
+    uint256 usdcAssetType
   )
   {
     STARKWARE_CONTRACT = starkwareContractAddress;
     USDC_ADDRESS = usdcAddress;
     USDC_ASSET_TYPE = usdcAssetType;
-    ETH_PLACEHOLDER_ADDRESS = ethPlaceholderAddress;
 
     // Set the allowance to the highest possible value.
     usdcAddress.safeApprove(address(starkwareContractAddress), type(uint256).max);
@@ -73,7 +71,7 @@ contract CurrencyConvertor is BaseRelayRecipient {
   // ============ State-Changing Functions ============
 
   function versionRecipient() external override view returns (string memory) {
-    return 'placeholder';
+    return '1';
   }
 
   /**
