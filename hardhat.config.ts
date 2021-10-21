@@ -7,7 +7,7 @@ import "solidity-coverage"
 import '@typechain/hardhat'
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
-import { NetworkName } from "./tasks/types";
+import { NetworkName } from "./tasks/helpers/types";
 
 require('dotenv').config()
 
@@ -19,18 +19,18 @@ const SKIP_LOAD = process.env.SKIP_LOAD === 'true';
 
 // Load hardhat tasks.
 if (!SKIP_LOAD) {
-  // console.log('Loading scripts...');
-  // const tasksDir = path.join(__dirname, 'tasks');
-  // const tasksDirs = fs.readdirSync(tasksDir);
-  // tasksDirs.forEach((dirName) => {
-  //   const tasksDirPath = path.join(tasksDir, dirName);
-  //   const tasksFiles = fs.readdirSync(tasksDirPath);
-  //   tasksFiles.forEach((fileName) => {
-  //     const tasksFilePath = path.join(tasksDirPath, fileName);
-  //     /* eslint-disable-next-line global-require */
-  //     require(tasksFilePath);
-  //   });
-  // });
+  console.log('Loading scripts...');
+  const tasksDir = path.join(__dirname, 'tasks');
+  const tasksDirs = fs.readdirSync(tasksDir);
+  tasksDirs.forEach((dirName) => {
+    const tasksDirPath = path.join(tasksDir, dirName);
+    const tasksFiles = fs.readdirSync(tasksDirPath);
+    tasksFiles.forEach((fileName) => {
+      const tasksFilePath = path.join(tasksDirPath, fileName);
+      /* eslint-disable-next-line global-require */
+      require(tasksFilePath);
+    });
+  });
 }
 
 function getRemoteNetworkConfig(

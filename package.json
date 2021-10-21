@@ -4,11 +4,11 @@
     "build": "npx hardhat compile",
     "test": "npx hardhat test",
     "coverage": "npx hardhat coverage",
-    "deployProxyDeposit": "npx hardhat deployProxyDeposit"
+    "deploy-proxy-deposit:ROPSTEN": "npx hardhat --network ROPSTEN deploy-proxy-deposit",
+    "deploy-proxy-deposit:MAINNET": "npx hardhat --network MAINNET deploy-proxy-deposit"
   },
   "dependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
-    "@nomiclabs/hardhat-web3": "^2.0.0",
     "@opengsn/contracts": "^2.2.4",
     "@openzeppelin/contracts": "4.3.0",
     "bignumber.js": "^9.0.1",
