@@ -223,7 +223,7 @@ describe("CurrencyConvertor", () => {
         '22', // positionId
         zeroExTransaction.to,
         zeroExTransaction.data,
-      )).to.be.reverted;
+      )).to.be.revertedWith('');
     });
 
     it("deposit USDT to USDC with too small of swap", async () => {
@@ -238,7 +238,7 @@ describe("CurrencyConvertor", () => {
         '22', // positionId
         zeroExTransaction.to,
         zeroExTransaction.data,
-      )).to.be.reverted; //  �y� % UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT
+      )).to.be.revertedWith('');
     });
 
     it("deposit USDT as USDC to Starkware but starkKey is invalid", async () => {
@@ -273,8 +273,10 @@ describe("CurrencyConvertor", () => {
   });
 
   describe("deposit ETH", async () => {
+    const minUsdcAmount: string = '1000';
+
     it("deposit ETH as USDC to Starkware", async () => {
-      const zeroExTransaction = await zeroExRequestEth('1000');
+      const zeroExTransaction = await zeroExRequestEth(minUsdcAmount);
 
       // get old balances
       const userETHBalance: BigNumber = await signer.getBalance();
@@ -283,7 +285,7 @@ describe("CurrencyConvertor", () => {
       )
 
       const tx = await currencyConvertor.depositEth(
-        '1000',
+        minUsdcAmount,
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         zeroExTransaction.to,
@@ -298,7 +300,7 @@ describe("CurrencyConvertor", () => {
 
       const event = events[0];
       expect(event.args?.tokenFromAmount.toString()).to.equal(zeroExTransaction.value);
-      // expect(event.args?.tokenFrom.toLowerCase()).to.equal('eth');
+      expect(event.args?.tokenFrom).to.equal('0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE');
 
       // get new balances
       const newUserETHBalance: BigNumber = await signer.getBalance();
@@ -307,11 +309,11 @@ describe("CurrencyConvertor", () => {
       );
 
       expect(newUserETHBalance.lt(userETHBalance)).to.be.true;
-      expect(newStarkwareUsdcBalance.gt(starkwareUsdcBalance)).to.be.true;
+      expect((newStarkwareUsdcBalance.sub(1000)).gt(starkwareUsdcBalance)).to.be.true;
     });
 
     it("deposit ETH to USDC without enough funds", async () => {
-      const zeroExTransaction = await zeroExRequestEth('1000');
+      const zeroExTransaction = await zeroExRequestEth(minUsdcAmount);
 
       await expect(currencyConvertor.depositEth(
         '1',
@@ -320,25 +322,11 @@ describe("CurrencyConvertor", () => {
         zeroExTransaction.to,
         zeroExTransaction.data,
         { value: '1' },
-      )).to.be.reverted;
+      )).to.be.revertedWith('');
     });
-
-    it("deposit ETH to USDC with too small of swap", async () => {
-      const zeroExTransaction = await zeroExRequestEth('1000');
-
-      await expect(currencyConvertor.depositEth(
-        '100000000000',
-        starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
-        '22', // positionId
-        zeroExTransaction.to,
-        zeroExTransaction.data,
-        { value: zeroExTransaction.value },
-      )).to.be.reverted; //  �y� % UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT
-    });
-
 
     it("deposit ETH as USDC to Starkware but swap is less than limit amount", async () => {
-      const zeroExTransaction = await zeroExRequestEth('1000');
+      const zeroExTransaction = await zeroExRequestEth(minUsdcAmount);
 
       await expect(currencyConvertor.depositEth(
         '10000000000000000000',

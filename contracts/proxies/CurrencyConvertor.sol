@@ -40,7 +40,7 @@ contract CurrencyConvertor is BaseRelayRecipient {
 
   uint256 immutable USDC_ASSET_TYPE;
 
-  address immutable ETH_PLACEHOLDER_ADDRESS = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
+  address immutable ETH_PLACEHOLDER_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
   // ============ Constructor ============
 
