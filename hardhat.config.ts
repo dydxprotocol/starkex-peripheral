@@ -1,11 +1,54 @@
-import { HardhatUserConfig } from "hardhat/types";
+import { HardhatUserConfig, HttpNetworkUserConfig } from "hardhat/types";
+
+import fs from 'fs';
+import path from 'path';
 
 import "solidity-coverage"
 import '@typechain/hardhat'
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
+import { NetworkName } from "./tasks/helpers/types";
 
 require('dotenv').config()
+
+const MNEMONIC = process.env.MNEMONIC || '';
+const MNEMONIC_PATH = "m/44'/60'/0'/0";
+
+// Should be set when running hardhat compile or hardhat typechain.
+const SKIP_LOAD = process.env.SKIP_LOAD === 'true';
+
+// Load hardhat tasks.
+if (!SKIP_LOAD) {
+  console.log('Loading scripts...');
+  const tasksDir = path.join(__dirname, 'tasks');
+  const tasksDirs = fs.readdirSync(tasksDir);
+  tasksDirs.forEach((dirName) => {
+    const tasksDirPath = path.join(tasksDir, dirName);
+    const tasksFiles = fs.readdirSync(tasksDirPath);
+    tasksFiles.forEach((fileName) => {
+      const tasksFilePath = path.join(tasksDirPath, fileName);
+      /* eslint-disable-next-line global-require */
+      require(tasksFilePath);
+    });
+  });
+}
+
+function getRemoteNetworkConfig(
+  networkName: NetworkName,
+  networkId: number,
+): HttpNetworkUserConfig {
+  return {
+    url: `https://eth-${networkName}.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
+    chainId: networkId,
+    accounts: {
+      mnemonic: MNEMONIC,
+      path: MNEMONIC_PATH,
+      initialIndex: 0,
+      count: 10,
+    },
+  };
+}
+
 
 const config: HardhatUserConfig = {
   networks: {
@@ -13,7 +56,9 @@ const config: HardhatUserConfig = {
       forking: {
         url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
       }
-    }
+    },
+    ropsten: getRemoteNetworkConfig(NetworkName.ropsten, 3),
+    mainnet: getRemoteNetworkConfig(NetworkName.mainnet, 1),
   },
   solidity: {
     compilers: [{ version: "0.8.0", settings: { optimizer: {enabled: true, runs: 200} } }],
