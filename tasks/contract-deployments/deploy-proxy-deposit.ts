@@ -5,5 +5,3 @@ hardhatTask('deploy-proxy-deposit', 'deploy proxy deposit contract')
 .setAction(async () => {
   await deployProxyDeposit(getNetworkName());
 });
-
-module.exports = {};
