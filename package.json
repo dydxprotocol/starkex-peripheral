@@ -4,8 +4,8 @@
     "build": "npx hardhat compile",
     "test": "npx hardhat test",
     "coverage": "npx hardhat coverage",
-    "deploy-proxy-deposit:ROPSTEN": "npx hardhat --network ROPSTEN deploy-proxy-deposit",
-    "deploy-proxy-deposit:MAINNET": "npx hardhat --network MAINNET deploy-proxy-deposit"
+    "deploy-proxy-deposit:ROPSTEN": "npx hardhat --network ropsten deploy-proxy-deposit",
+    "deploy-proxy-deposit:MAINNET": "npx hardhat --network mainnet deploy-proxy-deposit"
   },
   "dependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
