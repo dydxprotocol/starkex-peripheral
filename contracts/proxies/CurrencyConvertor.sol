@@ -165,6 +165,7 @@ contract CurrencyConvertor is BaseRelayRecipient {
     * @param  starkKey           The starkKey of the L2 account to deposit into.
     * @param  positionId         The positionId of the L2 account to deposit into.
     * @param  exchange           The exchange being used to swap the taker token for USDC.
+    * @param  allowanceTarget    The address being approved for the swap.
     * @param  data               Trade parameters for the exchange.
     */
   function approveSwapAndDepositERC20(
@@ -174,12 +175,13 @@ contract CurrencyConvertor is BaseRelayRecipient {
     uint256 starkKey,
     uint256 positionId,
     address exchange,
+    address allowanceTarget,
     bytes calldata data
   )
     external
     returns (uint256)
   {
-    approveSwap(exchange, tokenFrom);
+    approveSwap(allowanceTarget, tokenFrom);
     return depositERC20(
       tokenFrom,
       tokenFromAmount,
