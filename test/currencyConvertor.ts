@@ -173,7 +173,7 @@ describe("CurrencyConvertor", () => {
       );
     });
 
-    it("deposit USDT as USDC in one wrapped transaction", async () => {
+    it.only("deposit USDT as USDC in one wrapped transaction", async () => {
       const zeroExTransaction = await zeroExRequestERC20('100');
 
       // get old balances
@@ -197,6 +197,7 @@ describe("CurrencyConvertor", () => {
       const events = _.chain(blocks.events!)
       .filter((e) => e.event === 'LogConvertedDeposit')
       .value();
+      console.log(events);
 
       const event = events[0];
       expect(event.args?.tokenFromAmount.toString()).to.equal('100000');
