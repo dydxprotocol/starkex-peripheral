@@ -15,7 +15,7 @@ import {
 } from './helpers';
 import { erc20Abi } from './erc20';
 
-import { CurrencyConvertor, ERC20 } from '../src/types';
+import { CurrencyConvertor, IERC20 } from '../src/types';
 import _ from 'underscore';
 import { BigNumber } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -36,8 +36,8 @@ chai.use(solidity);
 
 describe("CurrencyConvertor", () => {
   let currencyConvertor: CurrencyConvertor;
-  let usdcTokenContract: ERC20;
-  let usdtTokenContract: ERC20;
+  let usdcTokenContract: IERC20;
+  let usdtTokenContract: IERC20;
   let signer: SignerWithAddress;
 
   before(async () => {
@@ -82,12 +82,12 @@ describe("CurrencyConvertor", () => {
       usdtTokenAddress,
       erc20Abi,
       signer,
-    ) as ERC20;
+    ) as IERC20;
     usdcTokenContract = new ethers.Contract(
       usdcAddress,
       erc20Abi,
       signer,
-    ) as ERC20;
+    ) as IERC20;
 
     // approve ERC20 contracts
     await usdtTokenContract.approve(
@@ -189,6 +189,7 @@ describe("CurrencyConvertor", () => {
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         zeroExTransaction.to,
+        zeroExTransaction.allowanceTarget,
         zeroExTransaction.data,
       );
 
@@ -340,7 +341,9 @@ describe("CurrencyConvertor", () => {
   });
 });
 
-async function zeroExRequestERC20(sellAmount: string): Promise<{ to: string, data: string }> {
+async function zeroExRequestERC20(
+  sellAmount: string,
+): Promise<{ to: string, data: string, allowanceTarget: string }> {
   return axiosRequest({
     method: 'GET',
     url: generateQueryPath(
@@ -352,7 +355,7 @@ async function zeroExRequestERC20(sellAmount: string): Promise<{ to: string, dat
         slippagePercentage: 1.0,
       },
     ),
-  }) as Promise<{ to: string, data: string }>;
+  }) as Promise<{ to: string, data: string, allowanceTarget: string }>;
 }
 
 async function zeroExRequestEth(buyAmount: string): Promise<{ to: string, data: string, value: number }> {

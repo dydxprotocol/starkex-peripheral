@@ -5,10 +5,13 @@
     "test": "npx hardhat test",
     "coverage": "npx hardhat coverage",
     "deploy-proxy-deposit:ROPSTEN": "npx hardhat --network ropsten deploy-proxy-deposit",
-    "deploy-proxy-deposit:MAINNET": "npx hardhat --network mainnet deploy-proxy-deposit"
+    "deploy-proxy-deposit:MAINNET": "npx hardhat --network mainnet deploy-proxy-deposit",
+    "verify-contract-proxy-deposit:ROPSTEN": "npx hardhat verify --network ropsten",
+    "verify-contract-proxy-deposit:MAINNET": "npx hardhat verify --network mainnet"
   },
   "dependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-etherscan": "^2.1.7",
     "@opengsn/contracts": "^2.2.4",
     "@openzeppelin/contracts": "4.3.0",
     "bignumber.js": "^9.0.1",
