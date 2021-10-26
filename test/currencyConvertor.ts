@@ -25,6 +25,7 @@ import {
   usdcAddress,
   usdtTokenAddress,
   swapUrl,
+  biconomyForwarder,
 } from './constants';
 
 const { deployContract } = waffle;
@@ -74,6 +75,7 @@ describe("CurrencyConvertor", () => {
         starkwareContractAddress,
         usdcAddress,
         '0x02893294412a4c8f915f75892b395ebbf6859ec246ec365c3b1f56f47c3a0a5d',
+        biconomyForwarder,
       ],
     ) as CurrencyConvertor;
 
@@ -110,6 +112,10 @@ describe("CurrencyConvertor", () => {
   describe("auxiliary functions", async () => {
     it("versionRecipient", async () => {
       await currencyConvertor.versionRecipient();
+    });
+
+    it("trustedForwarder", async () => {
+      await currencyConvertor.trustedForwarder();
     });
 
     it("directly deposit USDC", async () => {
