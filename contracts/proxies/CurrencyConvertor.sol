@@ -16,6 +16,7 @@
 
 */
 
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
 
 import "@opengsn/contracts/src/BaseRelayRecipient.sol";
@@ -42,20 +43,24 @@ contract CurrencyConvertor is BaseRelayRecipient {
 
   address immutable ETH_PLACEHOLDER_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
+  address immutable FORWARDER;
+
   // ============ Constructor ============
 
   constructor(
     I_StarkwareContract starkwareContractAddress,
     IERC20 usdcAddress,
-    uint256 usdcAssetType
-  )
-  {
+    uint256 usdcAssetType,
+    address _trustedForwarder
+  ) {
     STARKWARE_CONTRACT = starkwareContractAddress;
     USDC_ADDRESS = usdcAddress;
     USDC_ASSET_TYPE = usdcAssetType;
 
     // Set the allowance to the highest possible value.
     usdcAddress.safeApprove(address(starkwareContractAddress), type(uint256).max);
+
+    FORWARDER = _trustedForwarder;
   }
 
 
@@ -68,11 +73,17 @@ contract CurrencyConvertor is BaseRelayRecipient {
     uint256 usdcAmount
   );
 
-  // ============ State-Changing Functions ============
+  // ============ Biconomy Override Functions ============
 
-  function versionRecipient() external override view returns (string memory) {
+  function versionRecipient() external override pure returns (string memory) {
     return '1';
   }
+
+  function trustedForwarder() override public view returns (address) {
+    return FORWARDER;
+  }
+
+  // ============ State-Changing Functions ============
 
   /**
   * Approve an exchange to swap an asset
