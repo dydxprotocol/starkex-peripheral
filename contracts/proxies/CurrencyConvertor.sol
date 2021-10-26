@@ -43,8 +43,6 @@ contract CurrencyConvertor is BaseRelayRecipient {
 
   address immutable ETH_PLACEHOLDER_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-  address immutable FORWARDER;
-
   // ============ Constructor ============
 
   constructor(
@@ -60,9 +58,8 @@ contract CurrencyConvertor is BaseRelayRecipient {
     // Set the allowance to the highest possible value.
     usdcAddress.safeApprove(address(starkwareContractAddress), type(uint256).max);
 
-    FORWARDER = _trustedForwarder;
+    _setTrustedForwarder(_trustedForwarder);
   }
-
 
   // ============ Events ============
 
@@ -73,17 +70,79 @@ contract CurrencyConvertor is BaseRelayRecipient {
     uint256 usdcAmount
   );
 
-  // ============ Biconomy Override Functions ============
+  // ============ External Functions ============
 
   function versionRecipient() external override pure returns (string memory) {
     return '1';
   }
 
-  function trustedForwarder() override public view returns (address) {
-    return FORWARDER;
+  /**
+    * @notice Make a deposit to the Starkware Layer2 Solution
+    *
+    * @param  depositAmount      The amount of USDC to deposit.
+    * @param  starkKey           The starkKey of the L2 account to deposit into.
+    * @param  positionId         The positionId of the L2 account to deposit into.
+    */
+  function deposit(
+    uint256 depositAmount,
+    uint256 starkKey,
+    uint256 positionId
+  ) external {
+    // Send fromToken to this contract.
+    USDC_ADDRESS.safeTransferFrom(
+      _msgSender(),
+      address(this),
+      depositAmount
+    );
+
+    // Deposit USDC to the L2.
+    STARKWARE_CONTRACT.deposit(
+      starkKey,
+      USDC_ASSET_TYPE,
+      positionId,
+      depositAmount
+    );
   }
 
-  // ============ State-Changing Functions ============
+  /**
+    * @notice Approve the token to swap and then makes a deposit with said token.
+    * @dev Emits LogConvertedDeposit event.
+    *
+    * @param  tokenFrom          The token to convert from.
+    * @param  tokenFromAmount    The amount of `tokenFrom` tokens to deposit.
+    * @param  minUsdcAmount      The minimum USDC amount the user will accept in a swap.
+    * @param  starkKey           The starkKey of the L2 account to deposit into.
+    * @param  positionId         The positionId of the L2 account to deposit into.
+    * @param  exchange           The exchange being used to swap the taker token for USDC.
+    * @param  allowanceTarget    The address being approved for the swap.
+    * @param  data               Trade parameters for the exchange.
+    */
+  function approveSwapAndDepositERC20(
+    IERC20 tokenFrom,
+    uint256 tokenFromAmount,
+    uint256 minUsdcAmount,
+    uint256 starkKey,
+    uint256 positionId,
+    address exchange,
+    address allowanceTarget,
+    bytes calldata data
+  )
+    external
+    returns (uint256)
+  {
+    approveSwap(allowanceTarget, tokenFrom);
+    return depositERC20(
+      tokenFrom,
+      tokenFromAmount,
+      minUsdcAmount,
+      starkKey,
+      positionId,
+      exchange,
+      data
+    );
+  }
+
+  // ============ Public Functions ============
 
   /**
   * Approve an exchange to swap an asset
@@ -167,44 +226,6 @@ contract CurrencyConvertor is BaseRelayRecipient {
   }
 
   /**
-    * @notice Approve the token to swap and then makes a deposit with said token.
-    * @dev Emits LogConvertedDeposit event.
-    *
-    * @param  tokenFrom          The token to convert from.
-    * @param  tokenFromAmount    The amount of `tokenFrom` tokens to deposit.
-    * @param  minUsdcAmount      The minimum USDC amount the user will accept in a swap.
-    * @param  starkKey           The starkKey of the L2 account to deposit into.
-    * @param  positionId         The positionId of the L2 account to deposit into.
-    * @param  exchange           The exchange being used to swap the taker token for USDC.
-    * @param  allowanceTarget    The address being approved for the swap.
-    * @param  data               Trade parameters for the exchange.
-    */
-  function approveSwapAndDepositERC20(
-    IERC20 tokenFrom,
-    uint256 tokenFromAmount,
-    uint256 minUsdcAmount,
-    uint256 starkKey,
-    uint256 positionId,
-    address exchange,
-    address allowanceTarget,
-    bytes calldata data
-  )
-    external
-    returns (uint256)
-  {
-    approveSwap(allowanceTarget, tokenFrom);
-    return depositERC20(
-      tokenFrom,
-      tokenFromAmount,
-      minUsdcAmount,
-      starkKey,
-      positionId,
-      exchange,
-      data
-    );
-  }
-
-    /**
     * @notice Make a deposit to the Starkware Layer2 Solution, after converting funds to USDC.
     *  Funds will be withdrawn from the sender and USDC will be deposited into the trading account
     *  specified by the starkKey and positionId.
@@ -256,33 +277,5 @@ contract CurrencyConvertor is BaseRelayRecipient {
     );
 
     return usdcBalanceChange;
-  }
-
-  /**
-    * @notice Make a deposit to the Starkware Layer2 Solution
-    *
-    * @param  depositAmount      The amount of USDC to deposit.
-    * @param  starkKey           The starkKey of the L2 account to deposit into.
-    * @param  positionId         The positionId of the L2 account to deposit into.
-    */
-  function deposit(
-    uint256 depositAmount,
-    uint256 starkKey,
-    uint256 positionId
-  ) external {
-    // Send fromToken to this contract.
-    USDC_ADDRESS.safeTransferFrom(
-      _msgSender(),
-      address(this),
-      depositAmount
-    );
-
-    // Deposit USDC to the L2.
-    STARKWARE_CONTRACT.deposit(
-      starkKey,
-      USDC_ASSET_TYPE,
-      positionId,
-      depositAmount
-    );
   }
 }
