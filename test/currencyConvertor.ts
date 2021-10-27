@@ -279,11 +279,11 @@ describe("CurrencyConvertor", () => {
     });
   });
 
-  describe("deposit ETH", async () => {
-    const minUsdcAmount: string = '1000';
+  describe.only("deposit ETH", async () => {
+    const minEthAmount: string = '1000';
 
     it("deposit ETH as USDC to Starkware", async () => {
-      const zeroExTransaction = await zeroExRequestEth(minUsdcAmount);
+      const zeroExTransaction = await zeroExRequestEth(minEthAmount);
 
       // get old balances
       const userETHBalance: BigNumber = await signer.getBalance();
@@ -292,7 +292,7 @@ describe("CurrencyConvertor", () => {
       )
 
       const tx = await currencyConvertor.depositEth(
-        minUsdcAmount,
+        '1',
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         zeroExTransaction.to,
@@ -320,7 +320,7 @@ describe("CurrencyConvertor", () => {
     });
 
     it("deposit ETH to USDC without enough funds", async () => {
-      const zeroExTransaction = await zeroExRequestEth(minUsdcAmount);
+      const zeroExTransaction = await zeroExRequestEth(minEthAmount);
 
       await expect(currencyConvertor.depositEth(
         '1',
@@ -333,7 +333,7 @@ describe("CurrencyConvertor", () => {
     });
 
     it("deposit ETH as USDC to Starkware but swap is less than limit amount", async () => {
-      const zeroExTransaction = await zeroExRequestEth(minUsdcAmount);
+      const zeroExTransaction = await zeroExRequestEth(minEthAmount);
 
       await expect(currencyConvertor.depositEth(
         '10000000000000000000',
@@ -364,13 +364,13 @@ async function zeroExRequestERC20(
   }) as Promise<{ to: string, data: string, allowanceTarget: string }>;
 }
 
-async function zeroExRequestEth(buyAmount: string): Promise<{ to: string, data: string, value: number }> {
+async function zeroExRequestEth(sellAmount: string): Promise<{ to: string, data: string, value: number }> {
   return axiosRequest({
     method: 'GET',
     url: generateQueryPath(
       swapUrl,
       {
-        buyAmount,
+        sellAmount,
         sellToken: 'ETH',
         buyToken: usdcAddress,
       },
