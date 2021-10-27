@@ -279,8 +279,8 @@ describe("CurrencyConvertor", () => {
     });
   });
 
-  describe.only("deposit ETH", async () => {
-    const minEthAmount: string = '1000';
+  describe("deposit ETH", async () => {
+    const minEthAmount: string = '10000000000000';
 
     it("deposit ETH as USDC to Starkware", async () => {
       const zeroExTransaction = await zeroExRequestEth(minEthAmount);
