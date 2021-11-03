@@ -77,34 +77,6 @@ contract CurrencyConvertor is BaseRelayRecipient {
   }
 
   /**
-    * @notice Make a deposit to the Starkware Layer2 Solution
-    *
-    * @param  depositAmount      The amount of USDC to deposit.
-    * @param  starkKey           The starkKey of the L2 account to deposit into.
-    * @param  positionId         The positionId of the L2 account to deposit into.
-    */
-  function deposit(
-    uint256 depositAmount,
-    uint256 starkKey,
-    uint256 positionId
-  ) external {
-    // Send fromToken to this contract.
-    USDC_ADDRESS.safeTransferFrom(
-      _msgSender(),
-      address(this),
-      depositAmount
-    );
-
-    // Deposit USDC to the L2.
-    STARKWARE_CONTRACT.deposit(
-      starkKey,
-      USDC_ASSET_TYPE,
-      positionId,
-      depositAmount
-    );
-  }
-
-  /**
     * @notice Approve the token to swap and then makes a deposit with said token.
     * @dev Emits LogConvertedDeposit event.
     *
@@ -142,7 +114,133 @@ contract CurrencyConvertor is BaseRelayRecipient {
     );
   }
 
+  /**
+    * @notice Registers a user and makes a deposit with said token.
+    * @dev Emits LogConvertedDeposit event.
+    *
+    * @param  signature          The signature for registering.
+    * @param  tokenFrom          The token to convert from.
+    * @param  tokenFromAmount    The amount of `tokenFrom` tokens to deposit.
+    * @param  minUsdcAmount      The minimum USDC amount the user will accept in a swap.
+    * @param  starkKey           The starkKey of the L2 account to deposit into.
+    * @param  positionId         The positionId of the L2 account to deposit into.
+    * @param  exchange           The exchange being used to swap the taker token for USDC.
+    * @param  allowanceTarget    The address being approved for the swap.
+    * @param  data               Trade parameters for the exchange.
+    */
+  function registerAndDepositERC20(
+    bytes calldata signature,
+    IERC20 tokenFrom,
+    uint256 tokenFromAmount,
+    uint256 minUsdcAmount,
+    uint256 starkKey,
+    uint256 positionId,
+    address exchange,
+    address allowanceTarget,
+    bytes calldata data
+  )
+    external
+    returns (uint256)
+  {
+    STARKWARE_CONTRACT.register(_msgSender(), starkKey, signature);
+    approveSwap(allowanceTarget, tokenFrom);
+    return depositERC20(
+      tokenFrom,
+      tokenFromAmount,
+      minUsdcAmount,
+      starkKey,
+      positionId,
+      exchange,
+      data
+    );
+  }
+
+  /**
+    * @notice Registers a user and makes a deposit with ETH.
+    * @dev Emits LogConvertedDeposit event.
+    *
+    * @param  signature          The signature for registering.
+    * @param  minUsdcAmount      The minimum USDC amount the user will accept in a swap.
+    * @param  starkKey           The starkKey of the L2 account to deposit into.
+    * @param  positionId         The positionId of the L2 account to deposit into.
+    * @param  exchange           The exchange being used to swap the taker token for USDC.
+    * @param  data               Trade parameters for the exchange.
+    */
+  function registerAndDepositETH(
+    bytes calldata signature,
+    uint256 minUsdcAmount,
+    uint256 starkKey,
+    uint256 positionId,
+    address exchange,
+    bytes calldata data
+  )
+    external
+    returns (uint256)
+  {
+    STARKWARE_CONTRACT.register(_msgSender(), starkKey, signature);
+    return depositEth(
+      minUsdcAmount,
+      starkKey,
+      positionId,
+      exchange,
+      data
+    );
+  }
+
+  /**
+    * @notice Registers a user and makes a direct deposit.
+    *
+    * @param  signature          The signature for registering.
+    * @param  depositAmount      The amount of USDC to deposit.
+    * @param  starkKey           The starkKey of the L2 account to deposit into.
+    * @param  positionId         The positionId of the L2 account to deposit into.
+    */
+  function registerAndDeposit(
+    bytes calldata signature,
+    uint256 depositAmount,
+    uint256 starkKey,
+    uint256 positionId
+  )
+    external
+  {
+    STARKWARE_CONTRACT.register(_msgSender(), starkKey, signature);
+    return deposit(
+      depositAmount,
+      starkKey,
+      positionId
+    );
+  }
+
+
   // ============ Public Functions ============
+
+  /**
+    * @notice Make a deposit to the Starkware Layer2 Solution
+    *
+    * @param  depositAmount      The amount of USDC to deposit.
+    * @param  starkKey           The starkKey of the L2 account to deposit into.
+    * @param  positionId         The positionId of the L2 account to deposit into.
+    */
+  function deposit(
+    uint256 depositAmount,
+    uint256 starkKey,
+    uint256 positionId
+  ) public {
+    // Send fromToken to this contract.
+    USDC_ADDRESS.safeTransferFrom(
+      _msgSender(),
+      address(this),
+      depositAmount
+    );
+
+    // Deposit USDC to the L2.
+    STARKWARE_CONTRACT.deposit(
+      starkKey,
+      USDC_ASSET_TYPE,
+      positionId,
+      depositAmount
+    );
+  }
 
   /**
   * Approve an exchange to swap an asset
