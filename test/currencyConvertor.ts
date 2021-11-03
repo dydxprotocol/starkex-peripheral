@@ -123,18 +123,19 @@ describe("CurrencyConvertor", () => {
         '1',
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
+        Buffer.from('', 'utf8'),
       );
     });
 
-    it("register + directly deposit USDC - fails with invalid signature", async () => {
+    it("register + directly deposit USDC", async () => {
       const zeroExTransaction = await zeroExRequestERC20('100');
 
-      await expect(currencyConvertor.registerAndDeposit(
-        zeroExTransaction.data,
+      await expect(currencyConvertor.deposit(
         '100000',
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
-      )).to.be.revertedWith('');
+        zeroExTransaction.data,
+      )).to.be.revertedWith('STARK_KEY_UNAVAILABLE');
     });
   });
 
@@ -156,6 +157,7 @@ describe("CurrencyConvertor", () => {
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         zeroExTransaction.to,
+        Buffer.from('', 'utf8'),
         zeroExTransaction.data,
       );
 
@@ -186,6 +188,7 @@ describe("CurrencyConvertor", () => {
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         zeroExTransaction.to,
+        Buffer.from('', 'utf8'),
         zeroExTransaction2.data,
       );
     });
@@ -207,6 +210,7 @@ describe("CurrencyConvertor", () => {
         '22', // positionId
         zeroExTransaction.to,
         zeroExTransaction.allowanceTarget,
+        Buffer.from('', 'utf8'),
         zeroExTransaction.data,
       );
 
@@ -229,11 +233,10 @@ describe("CurrencyConvertor", () => {
       expect(newStarkwareUsdcBalance.gt(starkwareUsdcBalance)).to.be.true;
     });
 
-    it("register + deposit USDT as USDC in one wrapped transaction - fails with invalid signature", async () => {
+    it("register + deposit USDT as USDC in one wrapped transaction", async () => {
       const zeroExTransaction = await zeroExRequestERC20('100');
 
-      await expect(currencyConvertor.registerAndDepositERC20(
-        zeroExTransaction.data,
+      await expect(currencyConvertor.approveSwapAndDepositERC20(
         usdtTokenAddress,
         '100000',
         '1',
@@ -242,7 +245,8 @@ describe("CurrencyConvertor", () => {
         zeroExTransaction.to,
         zeroExTransaction.allowanceTarget,
         zeroExTransaction.data,
-      )).to.be.revertedWith('');
+        zeroExTransaction.data,
+      )).to.be.revertedWith('STARK_KEY_UNAVAILABLE');
     });
 
     it("deposit USDT to USDC without enough funds", async () => {
@@ -256,6 +260,7 @@ describe("CurrencyConvertor", () => {
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         zeroExTransaction.to,
+        Buffer.from('', 'utf8'),
         zeroExTransaction.data,
       )).to.be.revertedWith('');
     });
@@ -271,6 +276,7 @@ describe("CurrencyConvertor", () => {
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         zeroExTransaction.to,
+        Buffer.from('', 'utf8'),
         zeroExTransaction.data,
       )).to.be.revertedWith('');
     });
@@ -286,6 +292,7 @@ describe("CurrencyConvertor", () => {
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f90'),
         '22', // positionId
         zeroExTransaction.to,
+        Buffer.from('', 'utf8'),
         zeroExTransaction.data,
       )).to.be.revertedWith('INVALID_STARK_KEY');
     });
@@ -301,6 +308,7 @@ describe("CurrencyConvertor", () => {
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         zeroExTransaction.to,
+        Buffer.from('', 'utf8'),
         zeroExTransaction.data,
       )).to.be.revertedWith('Received USDC is less than minUsdcAmount');
     });
@@ -323,6 +331,7 @@ describe("CurrencyConvertor", () => {
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         zeroExTransaction.to,
+        Buffer.from('', 'utf8'),
         zeroExTransaction.data,
         { value: zeroExTransaction.value },
       );
@@ -346,17 +355,18 @@ describe("CurrencyConvertor", () => {
       expect((newStarkwareUsdcBalance.sub(1000)).gt(starkwareUsdcBalance)).to.be.true;
     });
 
-    it("register + deposit ETH as USDC in one wrapped transaction - fails with invalid signature", async () => {
-      const zeroExTransaction = await zeroExRequestERC20('100');
+    it("register + deposit ETH as USDC in one wrapped transaction", async () => {
+      const zeroExTransaction = await zeroExRequestEth(minEthAmount);
 
-      await expect(currencyConvertor.registerAndDepositETH(
-        zeroExTransaction.data,
-        '100000',
+      await expect(currencyConvertor.depositEth(
+        '1',
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         zeroExTransaction.to,
         zeroExTransaction.data,
-      )).to.be.revertedWith('');
+        zeroExTransaction.data,
+        { value: zeroExTransaction.value },
+      )).to.be.revertedWith('STARK_KEY_UNAVAILABLE');
     });
 
 
@@ -368,6 +378,7 @@ describe("CurrencyConvertor", () => {
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         zeroExTransaction.to,
+        Buffer.from('', 'utf8'),
         zeroExTransaction.data,
         { value: '1' },
       )).to.be.revertedWith('');
@@ -381,6 +392,7 @@ describe("CurrencyConvertor", () => {
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         zeroExTransaction.to,
+        Buffer.from('', 'utf8'),
         zeroExTransaction.data,
         { value: zeroExTransaction.value },
       )).to.be.revertedWith('Received USDC is less than minUsdcAmount');

@@ -51,7 +51,7 @@ interface I_StarkwareContract {
     * @param  starkKey        The starkKey of the L2 account to deposit into.
     * @param  signature       The signature for registering.
     */
-    function register(
+    function registerUser(
       address ethKey,
       uint256 starkKey,
       bytes calldata signature
