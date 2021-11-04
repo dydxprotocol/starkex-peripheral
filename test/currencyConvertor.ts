@@ -157,8 +157,8 @@ describe("CurrencyConvertor", () => {
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         zeroExTransaction.to,
-        Buffer.from('', 'utf8'),
         zeroExTransaction.data,
+        Buffer.from('', 'utf8'),
       );
 
       const blocks = await tx.wait();
@@ -188,8 +188,8 @@ describe("CurrencyConvertor", () => {
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         zeroExTransaction.to,
-        Buffer.from('', 'utf8'),
         zeroExTransaction2.data,
+        Buffer.from('', 'utf8'),
       );
     });
 
@@ -210,8 +210,8 @@ describe("CurrencyConvertor", () => {
         '22', // positionId
         zeroExTransaction.to,
         zeroExTransaction.allowanceTarget,
-        Buffer.from('', 'utf8'),
         zeroExTransaction.data,
+        Buffer.from('', 'utf8'),
       );
 
       const blocks = await tx.wait();
@@ -260,8 +260,8 @@ describe("CurrencyConvertor", () => {
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         zeroExTransaction.to,
-        Buffer.from('', 'utf8'),
         zeroExTransaction.data,
+        Buffer.from('', 'utf8'),
       )).to.be.revertedWith('');
     });
 
@@ -276,8 +276,8 @@ describe("CurrencyConvertor", () => {
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         zeroExTransaction.to,
-        Buffer.from('', 'utf8'),
         zeroExTransaction.data,
+        Buffer.from('', 'utf8'),
       )).to.be.revertedWith('');
     });
 
@@ -292,8 +292,8 @@ describe("CurrencyConvertor", () => {
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f90'),
         '22', // positionId
         zeroExTransaction.to,
-        Buffer.from('', 'utf8'),
         zeroExTransaction.data,
+        Buffer.from('', 'utf8'),
       )).to.be.revertedWith('INVALID_STARK_KEY');
     });
 
@@ -308,8 +308,8 @@ describe("CurrencyConvertor", () => {
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         zeroExTransaction.to,
-        Buffer.from('', 'utf8'),
         zeroExTransaction.data,
+        Buffer.from('', 'utf8'),
       )).to.be.revertedWith('Received USDC is less than minUsdcAmount');
     });
   });
@@ -331,8 +331,8 @@ describe("CurrencyConvertor", () => {
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         zeroExTransaction.to,
-        Buffer.from('', 'utf8'),
         zeroExTransaction.data,
+        Buffer.from('', 'utf8'),
         { value: zeroExTransaction.value },
       );
 
@@ -378,8 +378,8 @@ describe("CurrencyConvertor", () => {
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         zeroExTransaction.to,
-        Buffer.from('', 'utf8'),
         zeroExTransaction.data,
+        Buffer.from('', 'utf8'),
         { value: '1' },
       )).to.be.revertedWith('');
     });
@@ -392,8 +392,8 @@ describe("CurrencyConvertor", () => {
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         zeroExTransaction.to,
-        Buffer.from('', 'utf8'),
         zeroExTransaction.data,
+        Buffer.from('', 'utf8'),
         { value: zeroExTransaction.value },
       )).to.be.revertedWith('Received USDC is less than minUsdcAmount');
     });

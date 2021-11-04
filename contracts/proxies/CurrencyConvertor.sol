@@ -121,8 +121,8 @@ contract CurrencyConvertor is BaseRelayRecipient {
     * @param  positionId         The positionId of the L2 account to deposit into.
     * @param  exchange           The exchange being used to swap the taker token for USDC.
     * @param  allowanceTarget    The address being approved for the swap.
-    * @param  signature          The signature for registering. NOTE: if length is 0, will not try to register
     * @param  data               Trade parameters for the exchange.
+    * @param  signature          The signature for registering. NOTE: if length is 0, will not try to register.
     */
   function approveSwapAndDepositERC20(
     IERC20 tokenFrom,
@@ -132,8 +132,8 @@ contract CurrencyConvertor is BaseRelayRecipient {
     uint256 positionId,
     address exchange,
     address allowanceTarget,
-    bytes calldata signature,
-    bytes calldata data
+    bytes calldata data,
+    bytes calldata signature
   )
     external
     returns (uint256)
@@ -146,8 +146,8 @@ contract CurrencyConvertor is BaseRelayRecipient {
       starkKey,
       positionId,
       exchange,
-      signature,
-      data
+      data,
+      signature
     );
   }
 
@@ -182,8 +182,8 @@ contract CurrencyConvertor is BaseRelayRecipient {
     * @param  starkKey           The starkKey of the L2 account to deposit into.
     * @param  positionId         The positionId of the L2 account to deposit into.
     * @param  exchange           The exchange being used to swap the taker token for USDC.
-    * @param  signature          The signature for registering. NOTE: if length is 0, will not try to register.
     * @param  data               Trade parameters for the exchange.
+    * @param  signature          The signature for registering. NOTE: if length is 0, will not try to register.
     */
   function depositERC20(
     IERC20 tokenFrom,
@@ -192,8 +192,8 @@ contract CurrencyConvertor is BaseRelayRecipient {
     uint256 starkKey,
     uint256 positionId,
     address exchange,
-    bytes calldata signature,
-    bytes calldata data
+    bytes calldata data,
+    bytes calldata signature
   )
     public
     returns (uint256)
@@ -212,30 +212,33 @@ contract CurrencyConvertor is BaseRelayRecipient {
     uint256 originalUsdcBalance = USDC_ADDRESS.balanceOf(address(this));
 
     // Swap token
-    (bool success, bytes memory returndata) = exchange.call(data);
-    require(success, string(returndata));
+    // Limit variables on the stack to avoid “Stack too deep” error.
+    {
+      (bool success, bytes memory returndata) = exchange.call(data);
+      require(success, string(returndata));
+    }
 
     // Deposit change in balance of USDC to the L2 exchange account of the sender.
-    require(USDC_ADDRESS.balanceOf(address(this)) - originalUsdcBalance >= minUsdcAmount, 'Received USDC is less than minUsdcAmount');
+    uint256 usdcBalanceChange = USDC_ADDRESS.balanceOf(address(this)) - originalUsdcBalance;
+    require(usdcBalanceChange >= minUsdcAmount, 'Received USDC is less than minUsdcAmount');
 
     // Deposit USDC to the L2.
     STARKWARE_CONTRACT.deposit(
       starkKey,
       USDC_ASSET_TYPE,
       positionId,
-      USDC_ADDRESS.balanceOf(address(this)) - originalUsdcBalance
+      usdcBalanceChange
     );
-
 
     // Log the result.
     emit LogConvertedDeposit(
       _msgSender(),
       address(tokenFrom),
       tokenFromAmount,
-      USDC_ADDRESS.balanceOf(address(this)) - originalUsdcBalance
+      usdcBalanceChange
     );
 
-    return USDC_ADDRESS.balanceOf(address(this)) - originalUsdcBalance;
+    return usdcBalanceChange;
   }
 
   /**
@@ -248,16 +251,16 @@ contract CurrencyConvertor is BaseRelayRecipient {
     * @param  starkKey           The starkKey of the L2 account to deposit into.
     * @param  positionId         The positionId of the L2 account to deposit into.
     * @param  exchange           The exchange being used to swap the taker token for USDC.
-    * @param  signature          The signature for registering. NOTE: if length is 0, will not try to register.
     * @param  data               Trade parameters for the exchange.
+    * @param  signature          The signature for registering. NOTE: if length is 0, will not try to register.
     */
   function depositEth(
     uint256 minUsdcAmount,
     uint256 starkKey,
     uint256 positionId,
     address exchange,
-    bytes calldata signature,
-    bytes calldata data
+    bytes calldata data,
+    bytes calldata signature
   )
     public
     payable
