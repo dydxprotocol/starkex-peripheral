@@ -82,12 +82,18 @@ contract CurrencyConvertor is BaseRelayRecipient {
     * @param  depositAmount      The amount of USDC to deposit.
     * @param  starkKey           The starkKey of the L2 account to deposit into.
     * @param  positionId         The positionId of the L2 account to deposit into.
+    * @param  signature          The signature for registering. NOTE: if length is 0, will not try to register.
     */
   function deposit(
     uint256 depositAmount,
     uint256 starkKey,
-    uint256 positionId
+    uint256 positionId,
+    bytes calldata signature
   ) external {
+    if (signature.length > 0) {
+      STARKWARE_CONTRACT.registerUser(_msgSender(), starkKey, signature);
+    }
+
     // Send fromToken to this contract.
     USDC_ADDRESS.safeTransferFrom(
       _msgSender(),
@@ -116,6 +122,7 @@ contract CurrencyConvertor is BaseRelayRecipient {
     * @param  exchange           The exchange being used to swap the taker token for USDC.
     * @param  allowanceTarget    The address being approved for the swap.
     * @param  data               Trade parameters for the exchange.
+    * @param  signature          The signature for registering. NOTE: if length is 0, will not try to register.
     */
   function approveSwapAndDepositERC20(
     IERC20 tokenFrom,
@@ -125,7 +132,8 @@ contract CurrencyConvertor is BaseRelayRecipient {
     uint256 positionId,
     address exchange,
     address allowanceTarget,
-    bytes calldata data
+    bytes calldata data,
+    bytes calldata signature
   )
     external
     returns (uint256)
@@ -138,7 +146,8 @@ contract CurrencyConvertor is BaseRelayRecipient {
       starkKey,
       positionId,
       exchange,
-      data
+      data,
+      signature
     );
   }
 
@@ -174,6 +183,7 @@ contract CurrencyConvertor is BaseRelayRecipient {
     * @param  positionId         The positionId of the L2 account to deposit into.
     * @param  exchange           The exchange being used to swap the taker token for USDC.
     * @param  data               Trade parameters for the exchange.
+    * @param  signature          The signature for registering. NOTE: if length is 0, will not try to register.
     */
   function depositERC20(
     IERC20 tokenFrom,
@@ -182,11 +192,16 @@ contract CurrencyConvertor is BaseRelayRecipient {
     uint256 starkKey,
     uint256 positionId,
     address exchange,
-    bytes calldata data
+    bytes calldata data,
+    bytes calldata signature
   )
     public
     returns (uint256)
   {
+    if (signature.length > 0) {
+      STARKWARE_CONTRACT.registerUser(_msgSender(), starkKey, signature);
+    }
+
     // Send fromToken to this contract.
     tokenFrom.safeTransferFrom(
       _msgSender(),
@@ -197,12 +212,14 @@ contract CurrencyConvertor is BaseRelayRecipient {
     uint256 originalUsdcBalance = USDC_ADDRESS.balanceOf(address(this));
 
     // Swap token
-    (bool success, bytes memory returndata) = exchange.call(data);
-    require(success, string(returndata));
+    // Limit variables on the stack to avoid “Stack too deep” error.
+    {
+      (bool success, bytes memory returndata) = exchange.call(data);
+      require(success, string(returndata));
+    }
 
     // Deposit change in balance of USDC to the L2 exchange account of the sender.
     uint256 usdcBalanceChange = USDC_ADDRESS.balanceOf(address(this)) - originalUsdcBalance;
-
     require(usdcBalanceChange >= minUsdcAmount, 'Received USDC is less than minUsdcAmount');
 
     // Deposit USDC to the L2.
@@ -212,7 +229,6 @@ contract CurrencyConvertor is BaseRelayRecipient {
       positionId,
       usdcBalanceChange
     );
-
 
     // Log the result.
     emit LogConvertedDeposit(
@@ -236,18 +252,24 @@ contract CurrencyConvertor is BaseRelayRecipient {
     * @param  positionId         The positionId of the L2 account to deposit into.
     * @param  exchange           The exchange being used to swap the taker token for USDC.
     * @param  data               Trade parameters for the exchange.
+    * @param  signature          The signature for registering. NOTE: if length is 0, will not try to register.
     */
   function depositEth(
     uint256 minUsdcAmount,
     uint256 starkKey,
     uint256 positionId,
     address exchange,
-    bytes calldata data
+    bytes calldata data,
+    bytes calldata signature
   )
     public
     payable
     returns (uint256)
   {
+    if (signature.length > 0) {
+      STARKWARE_CONTRACT.registerUser(_msgSender(), starkKey, signature);
+    }
+
     uint256 originalUsdcBalance = USDC_ADDRESS.balanceOf(address(this));
 
     // Swap token

@@ -123,7 +123,19 @@ describe("CurrencyConvertor", () => {
         '1',
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
+        Buffer.from('', 'utf8'),
       );
+    });
+
+    it("register + directly deposit USDC", async () => {
+      const zeroExTransaction = await zeroExRequestERC20('100');
+
+      await expect(currencyConvertor.deposit(
+        '100000',
+        starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
+        '22', // positionId
+        zeroExTransaction.data,
+      )).to.be.revertedWith('STARK_KEY_UNAVAILABLE');
     });
   });
 
@@ -146,6 +158,7 @@ describe("CurrencyConvertor", () => {
         '22', // positionId
         zeroExTransaction.to,
         zeroExTransaction.data,
+        Buffer.from('', 'utf8'),
       );
 
       const blocks = await tx.wait();
@@ -176,6 +189,7 @@ describe("CurrencyConvertor", () => {
         '22', // positionId
         zeroExTransaction.to,
         zeroExTransaction2.data,
+        Buffer.from('', 'utf8'),
       );
     });
 
@@ -197,6 +211,7 @@ describe("CurrencyConvertor", () => {
         zeroExTransaction.to,
         zeroExTransaction.allowanceTarget,
         zeroExTransaction.data,
+        Buffer.from('', 'utf8'),
       );
 
       const blocks = await tx.wait();
@@ -218,6 +233,22 @@ describe("CurrencyConvertor", () => {
       expect(newStarkwareUsdcBalance.gt(starkwareUsdcBalance)).to.be.true;
     });
 
+    it("register + deposit USDT as USDC in one wrapped transaction", async () => {
+      const zeroExTransaction = await zeroExRequestERC20('100');
+
+      await expect(currencyConvertor.approveSwapAndDepositERC20(
+        usdtTokenAddress,
+        '100000',
+        '1',
+        starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
+        '22', // positionId
+        zeroExTransaction.to,
+        zeroExTransaction.allowanceTarget,
+        zeroExTransaction.data,
+        zeroExTransaction.data,
+      )).to.be.revertedWith('STARK_KEY_UNAVAILABLE');
+    });
+
     it("deposit USDT to USDC without enough funds", async () => {
       const zeroExTransaction = await zeroExRequestERC20('1000000');
 
@@ -230,6 +261,7 @@ describe("CurrencyConvertor", () => {
         '22', // positionId
         zeroExTransaction.to,
         zeroExTransaction.data,
+        Buffer.from('', 'utf8'),
       )).to.be.revertedWith('');
     });
 
@@ -245,6 +277,7 @@ describe("CurrencyConvertor", () => {
         '22', // positionId
         zeroExTransaction.to,
         zeroExTransaction.data,
+        Buffer.from('', 'utf8'),
       )).to.be.revertedWith('');
     });
 
@@ -260,6 +293,7 @@ describe("CurrencyConvertor", () => {
         '22', // positionId
         zeroExTransaction.to,
         zeroExTransaction.data,
+        Buffer.from('', 'utf8'),
       )).to.be.revertedWith('INVALID_STARK_KEY');
     });
 
@@ -275,6 +309,7 @@ describe("CurrencyConvertor", () => {
         '22', // positionId
         zeroExTransaction.to,
         zeroExTransaction.data,
+        Buffer.from('', 'utf8'),
       )).to.be.revertedWith('Received USDC is less than minUsdcAmount');
     });
   });
@@ -297,6 +332,7 @@ describe("CurrencyConvertor", () => {
         '22', // positionId
         zeroExTransaction.to,
         zeroExTransaction.data,
+        Buffer.from('', 'utf8'),
         { value: zeroExTransaction.value },
       );
 
@@ -319,6 +355,21 @@ describe("CurrencyConvertor", () => {
       expect((newStarkwareUsdcBalance.sub(1000)).gt(starkwareUsdcBalance)).to.be.true;
     });
 
+    it("register + deposit ETH as USDC in one wrapped transaction", async () => {
+      const zeroExTransaction = await zeroExRequestEth(minEthAmount);
+
+      await expect(currencyConvertor.depositEth(
+        '1',
+        starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
+        '22', // positionId
+        zeroExTransaction.to,
+        zeroExTransaction.data,
+        zeroExTransaction.data,
+        { value: zeroExTransaction.value },
+      )).to.be.revertedWith('STARK_KEY_UNAVAILABLE');
+    });
+
+
     it("deposit ETH to USDC without enough funds", async () => {
       const zeroExTransaction = await zeroExRequestEth(minEthAmount);
 
@@ -328,6 +379,7 @@ describe("CurrencyConvertor", () => {
         '22', // positionId
         zeroExTransaction.to,
         zeroExTransaction.data,
+        Buffer.from('', 'utf8'),
         { value: '1' },
       )).to.be.revertedWith('');
     });
@@ -341,6 +393,7 @@ describe("CurrencyConvertor", () => {
         '22', // positionId
         zeroExTransaction.to,
         zeroExTransaction.data,
+        Buffer.from('', 'utf8'),
         { value: zeroExTransaction.value },
       )).to.be.revertedWith('Received USDC is less than minUsdcAmount');
     });
