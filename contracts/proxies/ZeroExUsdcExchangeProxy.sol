@@ -31,69 +31,69 @@ import "hardhat/console.sol";
  * @notice Contract for interacting with ZeroEx exchange.
  */
 contract ZeroExUsdcExchangeProxy is I_ExchangeProxy {
-    using SafeERC20 for IERC20;
+  using SafeERC20 for IERC20;
 
-    // ============ Structs ============
+  // ============ Structs ============
 
-    struct ProxyExchangeData {
-      IERC20 tokenFrom;
-      address allowanceTarget;
-      uint256 minUsdcAmount;
-      address exchange;
-      bytes exchangeData;
-    }
-
-    // ============ State Variables ============
-
-    IERC20 immutable USDC_ADDRESS;
-
-    // ============ Constructor ============
-
-  constructor(
-    IERC20 usdcAddress
-  ) {
-    USDC_ADDRESS = usdcAddress;
+  struct ProxyExchangeData {
+    IERC20 tokenFrom;
+    address allowanceTarget;
+    uint256 minUsdcAmount;
+    address exchange;
+    bytes exchangeData;
   }
 
-  // ============ State-Changing Functions ============
+  // ============ State Variables ============
 
-  /**
-    * @notice Make a call to an exchange via proxy.
-    *
-    * @param  proxyExchangeData  data to be used as parameters for the exchange call.
-    */
-    function proxyExchange(
-      bytes calldata proxyExchangeData
-    ) external
-      override
-      payable {
-      (ProxyExchangeData memory proxyExchangeDataObject) = abi.decode(proxyExchangeData, (ProxyExchangeData));
+  IERC20 immutable USDC_ADDRESS;
 
-      // Set allowance (if non-zero addresses provided)
-      if (
-        proxyExchangeDataObject.tokenFrom != IERC20(address(0)) &&
-        proxyExchangeDataObject.allowanceTarget != address(0)
-      ) {
-        // safeApprove requires unsetting the allowance first.
-        proxyExchangeDataObject.tokenFrom.safeApprove(proxyExchangeDataObject.allowanceTarget, 0);
-        proxyExchangeDataObject.tokenFrom.safeApprove(proxyExchangeDataObject.allowanceTarget, type(uint256).max);
-      }
+  // ============ Constructor ============
 
-      uint256 originalUsdcBalance = USDC_ADDRESS.balanceOf(address(this));
+constructor(
+  IERC20 usdcAddress
+) {
+  USDC_ADDRESS = usdcAddress;
+}
 
-      (bool success, bytes memory returndata) = proxyExchangeDataObject.exchange.call{ value: msg.value }(
-        proxyExchangeDataObject.exchangeData
-      );
-      require(success, string(returndata));
+// ============ State-Changing Functions ============
 
-      // Verify minUsdcAmount
-      uint256 usdcBalanceChange = USDC_ADDRESS.balanceOf(address(this)) - originalUsdcBalance;
-      require(usdcBalanceChange >= proxyExchangeDataObject.minUsdcAmount, 'Received USDC is less than minUsdcAmount');
+/**
+  * @notice Make a call to an exchange via proxy.
+  *
+  * @param  proxyExchangeData  Bytes data for the trade, specific to the exchange proxy implementation.
+  */
+  function proxyExchange(
+    bytes calldata proxyExchangeData
+  )
+    external
+    override
+    payable
+  {
+    (ProxyExchangeData memory data) = abi.decode(proxyExchangeData, (ProxyExchangeData));
 
-      // transfer all USDC balance back to msg.sender
-      USDC_ADDRESS.safeTransfer(
-        msg.sender,
-        USDC_ADDRESS.balanceOf(address(this))
-      );
+    // Set allowance (if non-zero addresses provided)
+    if (
+      data.tokenFrom != IERC20(address(0)) &&
+      data.allowanceTarget != address(0)
+    ) {
+      // safeApprove requires unsetting the allowance first.
+      data.tokenFrom.safeApprove(data.allowanceTarget, 0);
+      data.tokenFrom.safeApprove(data.allowanceTarget, type(uint256).max);
     }
+
+    (bool success, bytes memory returndata) = data.exchange.call{ value: msg.value }(
+      data.exchangeData
+    );
+    require(success, string(returndata));
+
+    // Verify minUsdcAmount
+    uint256 usdcBalanceChange = USDC_ADDRESS.balanceOf(address(this));
+    require(usdcBalanceChange >= data.minUsdcAmount, 'Received USDC is less than minUsdcAmount');
+
+    // transfer all USDC balance back to msg.sender
+    USDC_ADDRESS.safeTransfer(
+      msg.sender,
+      usdcBalanceChange
+    );
+  }
 }

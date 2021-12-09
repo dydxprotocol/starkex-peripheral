@@ -20,10 +20,10 @@
 pragma solidity ^0.8.0;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { ERC2771Context } from "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
+import { ERC2771Context } from "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { I_StarkwareContract } from "../interfaces/I_StarkwareContracts.sol";
@@ -35,7 +35,12 @@ import { I_ExchangeProxy } from "../interfaces/I_ExchangeProxy.sol";
  *
  * @notice Contract for depositing to dYdX L2 in non-USDC tokens.
  */
-contract CurrencyConvertor is ERC2771Context, Pausable, Ownable, ReentrancyGuard {
+contract CurrencyConvertor is
+  ERC2771Context,
+  Pausable,
+  Ownable,
+  ReentrancyGuard
+{
   using SafeERC20 for IERC20;
 
   // ============ State Variables ============
@@ -54,8 +59,8 @@ contract CurrencyConvertor is ERC2771Context, Pausable, Ownable, ReentrancyGuard
     I_StarkwareContract starkwareContractAddress,
     IERC20 usdcAddress,
     uint256 usdcAssetType,
-    address _trustedForwarder
-  ) ERC2771Context(_trustedForwarder) {
+    address trustedForwarder
+  ) ERC2771Context(trustedForwarder) {
     STARKWARE_CONTRACT = starkwareContractAddress;
     USDC_ADDRESS = usdcAddress;
     USDC_ASSET_TYPE = usdcAssetType;
@@ -79,9 +84,9 @@ contract CurrencyConvertor is ERC2771Context, Pausable, Ownable, ReentrancyGuard
     return '1';
   }
 
-  function pause()
-      external
-      onlyOwner
+  function togglePause()
+    external
+    onlyOwner
   {
     if (!paused()) {
       _pause();
@@ -106,9 +111,8 @@ contract CurrencyConvertor is ERC2771Context, Pausable, Ownable, ReentrancyGuard
   )
     external
     nonReentrant
+    whenNotPaused
   {
-    require(!paused(), 'Cannot perform state-changing functions while contract is paused');
-
     if (signature.length > 0) {
       STARKWARE_CONTRACT.registerUser(_msgSender(), starkKey, signature);
     }
@@ -154,28 +158,27 @@ contract CurrencyConvertor is ERC2771Context, Pausable, Ownable, ReentrancyGuard
   )
     external
     nonReentrant
+    whenNotPaused
     returns (uint256)
   {
-    require(!paused(), 'Cannot perform state-changing functions while contract is paused');
+    address sender = _msgSender();
 
     if (signature.length > 0) {
-      STARKWARE_CONTRACT.registerUser(_msgSender(), starkKey, signature);
+      STARKWARE_CONTRACT.registerUser(sender, starkKey, signature);
     }
 
     // Send fromToken to this contract.
     tokenFrom.safeTransferFrom(
-      _msgSender(),
+      sender,
       address(exchangeProxy),
       tokenFromAmount
     );
-
-    uint256 originalUsdcBalance = USDC_ADDRESS.balanceOf(address(this));
 
     // Swap token
     exchangeProxy.proxyExchange(exchangeProxyData);
 
     // Deposit change in balance of USDC to the L2 exchange account of the sender.
-    uint256 usdcBalanceChange = USDC_ADDRESS.balanceOf(address(this)) - originalUsdcBalance;
+    uint256 usdcBalanceChange = USDC_ADDRESS.balanceOf(address(this));
 
     // Deposit USDC to the L2.
     STARKWARE_CONTRACT.deposit(
@@ -187,7 +190,7 @@ contract CurrencyConvertor is ERC2771Context, Pausable, Ownable, ReentrancyGuard
 
     // Log the result.
     emit LogConvertedDeposit(
-      _msgSender(),
+      sender,
       address(tokenFrom),
       tokenFromAmount,
       usdcBalanceChange
@@ -218,21 +221,20 @@ contract CurrencyConvertor is ERC2771Context, Pausable, Ownable, ReentrancyGuard
     external
     payable
     nonReentrant
+    whenNotPaused
     returns (uint256)
   {
-    require(!paused(), 'Cannot perform state-changing functions while contract is paused');
+    address sender = _msgSender();
 
     if (signature.length > 0) {
-      STARKWARE_CONTRACT.registerUser(_msgSender(), starkKey, signature);
+      STARKWARE_CONTRACT.registerUser(sender, starkKey, signature);
     }
-
-    uint256 originalUsdcBalance = USDC_ADDRESS.balanceOf(address(this));
 
     // Swap token
     exchangeProxy.proxyExchange{ value: msg.value }(exchangeProxyData);
 
     // Deposit change in balance of USDC to the L2 exchange account of the sender.
-    uint256 usdcBalanceChange = USDC_ADDRESS.balanceOf(address(this)) - originalUsdcBalance;
+    uint256 usdcBalanceChange = USDC_ADDRESS.balanceOf(address(this));
 
     // Deposit USDC to the L2.
     STARKWARE_CONTRACT.deposit(
@@ -242,10 +244,9 @@ contract CurrencyConvertor is ERC2771Context, Pausable, Ownable, ReentrancyGuard
       usdcBalanceChange
     );
 
-
     // Log the result.
     emit LogConvertedDeposit(
-      _msgSender(),
+      sender,
       ETH_PLACEHOLDER_ADDRESS,
       msg.value,
       usdcBalanceChange
@@ -255,7 +256,6 @@ contract CurrencyConvertor is ERC2771Context, Pausable, Ownable, ReentrancyGuard
   }
 
     // ============ Internal Functions ============
-
 
     function _msgSender() internal view virtual override(Context, ERC2771Context) returns (address sender) {
         return ERC2771Context._msgSender();

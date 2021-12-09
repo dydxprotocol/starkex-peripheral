@@ -18,6 +18,7 @@ import { erc20Abi } from './abi/erc20';
 
 import { CurrencyConvertor, IERC20, ZeroExUsdcExchangeProxy } from '../src/types';
 import _ from 'underscore';
+import { at } from 'lodash';
 import { BigNumber } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
@@ -130,14 +131,14 @@ describe("CurrencyConvertor", () => {
 
   describe("auxiliary functions", async () => {
     it("verify signature collision is not occurring", () => {
-      const signatures: string[] = Object.keys(usdcTokenContract.functions).map((fn) => {
+      const erc20signatures: string[] = Object.keys(usdcTokenContract.functions).map((fn) => {
         return web3.eth.abi.encodeFunctionSignature(fn);
-      })
+      });
 
-      const proxyExchangeDataSignature: string = web3.eth.abi.encodeFunctionSignature(
-        'proxyExchange(bytes)',
-      );
-      expect(signatures.includes(proxyExchangeDataSignature)).to.be.eq(false);
+      Object.keys(zeroExExchangeProxy.functions).map((fn) => {
+        const signature = web3.eth.abi.encodeFunctionSignature(fn);
+        expect(erc20signatures.includes(signature)).to.be.eq(false);
+      });
     })
 
     it("versionRecipient", async () => {
@@ -153,17 +154,17 @@ describe("CurrencyConvertor", () => {
       );
     });
 
-    it("directly deposit USDC while contract is paused", async () => {
-      await currencyConvertor.pause();
+    it("cannot directly deposit USDC while contract is paused", async () => {
+      await currencyConvertor.togglePause();
 
       await expect(currencyConvertor.deposit(
         '1',
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
         Buffer.from('', 'utf8'),
-      )).to.be.revertedWith('Cannot perform state-changing functions while contract is paused');
+      )).to.be.revertedWith('Pausable: paused');
 
-      await currencyConvertor.pause();
+      await currencyConvertor.togglePause();
     });
 
     it("register + directly deposit USDC", async () => {
@@ -250,9 +251,9 @@ describe("CurrencyConvertor", () => {
       )).to.be.revertedWith('STARK_KEY_UNAVAILABLE');
     });
 
-    it("deposit USDT as USDC when contract is paused", async () => {
+    it("cannot deposit USDT as USDC when contract is paused", async () => {
       const exchangeProxyData: string = await zeroExRequestERC20('100', minUsdcAmount);
-      await currencyConvertor.pause();
+      await currencyConvertor.togglePause();
 
       await expect(
         currencyConvertor.depositERC20(
@@ -264,12 +265,12 @@ describe("CurrencyConvertor", () => {
           exchangeProxyData,
           Buffer.from('', 'utf8'),
         ),
-      ).to.be.revertedWith('Cannot perform state-changing functions while contract is paused');
+      ).to.be.revertedWith('Pausable: paused');
 
-      await currencyConvertor.pause();
+      await currencyConvertor.togglePause();
     });
 
-    it("deposit USDT to USDC without enough funds", async () => {
+    it("cannot deposit USDT to USDC without enough funds", async () => {
       const exchangeProxyData: string = await zeroExRequestERC20('1000000', minUsdcAmount);
 
       await expect(currencyConvertor.depositERC20(
@@ -283,7 +284,7 @@ describe("CurrencyConvertor", () => {
       )).to.be.revertedWith('');
     });
 
-    it("deposit USDT as USDC to Starkware but starkKey is invalid", async () => {
+    it("cannot deposit USDT as USDC to Starkware when starkKey is invalid", async () => {
       const exchangeProxyData: string = await zeroExRequestERC20('100', minUsdcAmount);
 
       await expect(currencyConvertor.depositERC20(
@@ -297,7 +298,7 @@ describe("CurrencyConvertor", () => {
       )).to.be.revertedWith('INVALID_STARK_KEY');
     });
 
-    it("deposit USDT as USDC to Starkware but swap is less than limit amount", async () => {
+    it("cannot deposit USDT as USDC to Starkware when swap is less than limit amount", async () => {
       const exchangeProxyData: string = await zeroExRequestERC20('100', transferFromAmount);
 
       await expect(currencyConvertor.depositERC20(
@@ -366,9 +367,9 @@ describe("CurrencyConvertor", () => {
     });
 
 
-    it("deposit ETH as USDC when contract is paused", async () => {
+    it("cannot deposit ETH as USDC when contract is paused", async () => {
       const { exchangeProxyData, ethValue } = await zeroExRequestEth(minEthAmount, '1');
-      await currencyConvertor.pause();
+      await currencyConvertor.togglePause();
 
       await expect(currencyConvertor.depositEth(
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
@@ -377,12 +378,12 @@ describe("CurrencyConvertor", () => {
         exchangeProxyData,
         exchangeProxyData,
         { value: ethValue },
-      )).to.be.revertedWith('Cannot perform state-changing functions while contract is paused');
+      )).to.be.revertedWith('Pausable: paused');
 
-      await currencyConvertor.pause();
+      await currencyConvertor.togglePause();
     });
 
-    it("deposit ETH to USDC without enough funds", async () => {
+    it("cannot deposit ETH to USDC without enough funds", async () => {
       const { exchangeProxyData } = await zeroExRequestEth(minEthAmount, '1');
 
       await expect(currencyConvertor.depositEth(
@@ -395,7 +396,7 @@ describe("CurrencyConvertor", () => {
       )).to.be.revertedWith('');
     });
 
-    it("deposit ETH as USDC to Starkware but swap is less than limit amount", async () => {
+    it("cannot deposit ETH as USDC to Starkware when swap is less than limit amount", async () => {
       const { exchangeProxyData, ethValue } = await zeroExRequestEth(minEthAmount, '10000000000000000000');
 
       await expect(currencyConvertor.depositEth(
@@ -475,8 +476,8 @@ async function zeroExRequestEth(
 
 function encodeZeroExExchangeData(
   proxyExchangeData: {
-    tokenFrom?: string,
-    allowanceTarget?: string,
+    tokenFrom: string,
+    allowanceTarget: string,
     minUsdcAmount: string,
     exchange: string,
     exchangeData: string,
@@ -486,6 +487,15 @@ function encodeZeroExExchangeData(
     [
       'tuple(address,address,uint256,address,bytes)',
     ],
-    [Object.values(proxyExchangeData)],
+    [at(
+      proxyExchangeData,
+      [
+        'tokenFrom',
+        'allowanceTarget',
+        'minUsdcAmount',
+        'exchange',
+        'exchangeData',
+      ],
+    )],
   );
 }

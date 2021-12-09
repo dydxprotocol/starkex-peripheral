@@ -23,7 +23,7 @@ pragma solidity ^0.8.0;
  * @title I_ExchangeProxy
  * @author dYdX
  *
- * Interface for interacting with exchanges. Must pass in actual contract when calling CurrencyConvertor.
+ * Interface for interacting with exchanges.
  */
 interface I_ExchangeProxy {
 
@@ -32,10 +32,11 @@ interface I_ExchangeProxy {
   /**
     * @notice Make a call to an exchange via proxy.
     *
-    * @param  proxyExchangeData  data to be used as parameters for the exchange call.
+    * @param  proxyExchangeData  Bytes data for the trade, specific to the exchange proxy implementation.
     */
     function proxyExchange(
       bytes calldata proxyExchangeData
-    ) external
+    )
+      external
       payable;
 }
