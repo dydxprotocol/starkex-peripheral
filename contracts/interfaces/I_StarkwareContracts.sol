@@ -23,7 +23,7 @@ pragma solidity ^0.8.0;
  * @title I_StarkwareContract
  * @author dYdX
  *
- * Interface for starkex-contracts must pass in actual contract when calling CurrencyConvertorProxy.
+ * Interface for starkex-contracts.
  */
 interface I_StarkwareContract {
 

@@ -19,10 +19,15 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
 
-import "@opengsn/contracts/src/BaseRelayRecipient.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { Context } from "@openzeppelin/contracts/utils/Context.sol";
+import { ERC2771Context } from "@openzeppelin/contracts/metatx/ERC2771Context.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { I_StarkwareContract } from "../interfaces/I_StarkwareContracts.sol";
+import { I_ExchangeProxy } from "../interfaces/I_ExchangeProxy.sol";
 
 /**
  * @title CurrencyConvertor
@@ -30,7 +35,12 @@ import { I_StarkwareContract } from "../interfaces/I_StarkwareContracts.sol";
  *
  * @notice Contract for depositing to dYdX L2 in non-USDC tokens.
  */
-contract CurrencyConvertor is BaseRelayRecipient {
+contract CurrencyConvertor is
+  ERC2771Context,
+  Pausable,
+  Ownable,
+  ReentrancyGuard
+{
   using SafeERC20 for IERC20;
 
   // ============ State Variables ============
@@ -49,16 +59,16 @@ contract CurrencyConvertor is BaseRelayRecipient {
     I_StarkwareContract starkwareContractAddress,
     IERC20 usdcAddress,
     uint256 usdcAssetType,
-    address _trustedForwarder
-  ) {
+    address trustedForwarder
+  )
+    ERC2771Context(trustedForwarder)
+  {
     STARKWARE_CONTRACT = starkwareContractAddress;
     USDC_ADDRESS = usdcAddress;
     USDC_ASSET_TYPE = usdcAssetType;
 
     // Set the allowance to the highest possible value.
     usdcAddress.safeApprove(address(starkwareContractAddress), type(uint256).max);
-
-    _setTrustedForwarder(_trustedForwarder);
   }
 
   // ============ Events ============
@@ -72,8 +82,19 @@ contract CurrencyConvertor is BaseRelayRecipient {
 
   // ============ External Functions ============
 
-  function versionRecipient() external override pure returns (string memory) {
+  function versionRecipient() external pure returns (string memory) {
     return '1';
+  }
+
+  function togglePause()
+    external
+    onlyOwner
+  {
+    if (!paused()) {
+      _pause();
+      return;
+    }
+    _unpause();
   }
 
   /**
@@ -89,12 +110,16 @@ contract CurrencyConvertor is BaseRelayRecipient {
     uint256 starkKey,
     uint256 positionId,
     bytes calldata signature
-  ) external {
+  )
+    external
+    nonReentrant
+    whenNotPaused
+  {
     if (signature.length > 0) {
       STARKWARE_CONTRACT.registerUser(_msgSender(), starkKey, signature);
     }
 
-    // Send fromToken to this contract.
+    // Send tokenFrom to this contract.
     USDC_ADDRESS.safeTransferFrom(
       _msgSender(),
       address(this),
@@ -111,66 +136,6 @@ contract CurrencyConvertor is BaseRelayRecipient {
   }
 
   /**
-    * @notice Approve the token to swap and then makes a deposit with said token.
-    * @dev Emits LogConvertedDeposit event.
-    *
-    * @param  tokenFrom          The token to convert from.
-    * @param  tokenFromAmount    The amount of `tokenFrom` tokens to deposit.
-    * @param  minUsdcAmount      The minimum USDC amount the user will accept in a swap.
-    * @param  starkKey           The starkKey of the L2 account to deposit into.
-    * @param  positionId         The positionId of the L2 account to deposit into.
-    * @param  exchange           The exchange being used to swap the taker token for USDC.
-    * @param  allowanceTarget    The address being approved for the swap.
-    * @param  data               Trade parameters for the exchange.
-    * @param  signature          The signature for registering. NOTE: if length is 0, will not try to register.
-    */
-  function approveSwapAndDepositERC20(
-    IERC20 tokenFrom,
-    uint256 tokenFromAmount,
-    uint256 minUsdcAmount,
-    uint256 starkKey,
-    uint256 positionId,
-    address exchange,
-    address allowanceTarget,
-    bytes calldata data,
-    bytes calldata signature
-  )
-    external
-    returns (uint256)
-  {
-    approveSwap(allowanceTarget, tokenFrom);
-    return depositERC20(
-      tokenFrom,
-      tokenFromAmount,
-      minUsdcAmount,
-      starkKey,
-      positionId,
-      exchange,
-      data,
-      signature
-    );
-  }
-
-  // ============ Public Functions ============
-
-  /**
-  * Approve an exchange to swap an asset
-  *
-  * @param exchange Address of exchange that will be swapping a token
-  * @param token    Address of token that will be swapped by the exchange
-  */
-  function approveSwap(
-    address exchange,
-    IERC20 token
-  )
-    public
-  {
-    // safeApprove requires unsetting the allowance first.
-    token.safeApprove(exchange, 0);
-    token.safeApprove(exchange, type(uint256).max);
-  }
-
-  /**
     * @notice Make a deposit to the Starkware Layer2 Solution, after converting funds to USDC.
     *  Funds will be withdrawn from the sender and USDC will be deposited into the trading account
     *  specified by the starkKey and positionId.
@@ -178,67 +143,62 @@ contract CurrencyConvertor is BaseRelayRecipient {
     *
     * @param  tokenFrom          The ERC20 token to convert from.
     * @param  tokenFromAmount    The amount of `tokenFrom` tokens to deposit.
-    * @param  minUsdcAmount      The minimum USDC amount the user will accept in a swap.
     * @param  starkKey           The starkKey of the L2 account to deposit into.
     * @param  positionId         The positionId of the L2 account to deposit into.
-    * @param  exchange           The exchange being used to swap the taker token for USDC.
-    * @param  data               Trade parameters for the exchange.
+    * @param  exchangeProxy      The exchangeProxy being used to swap the taker token for USDC.
+    * @param  exchangeProxyData  Trade parameters for the exchangeProxy.
     * @param  signature          The signature for registering. NOTE: if length is 0, will not try to register.
     */
   function depositERC20(
     IERC20 tokenFrom,
     uint256 tokenFromAmount,
-    uint256 minUsdcAmount,
     uint256 starkKey,
     uint256 positionId,
-    address exchange,
-    bytes calldata data,
+    I_ExchangeProxy exchangeProxy,
+    bytes calldata exchangeProxyData,
     bytes calldata signature
   )
-    public
+    external
+    nonReentrant
+    whenNotPaused
     returns (uint256)
   {
+    address sender = _msgSender();
+
     if (signature.length > 0) {
-      STARKWARE_CONTRACT.registerUser(_msgSender(), starkKey, signature);
+      STARKWARE_CONTRACT.registerUser(sender, starkKey, signature);
     }
 
-    // Send fromToken to this contract.
+    // Send tokenFrom to this contract.
     tokenFrom.safeTransferFrom(
-      _msgSender(),
-      address(this),
+      sender,
+      address(exchangeProxy),
       tokenFromAmount
     );
 
-    uint256 originalUsdcBalance = USDC_ADDRESS.balanceOf(address(this));
-
     // Swap token
-    // Limit variables on the stack to avoid “Stack too deep” error.
-    {
-      (bool success, bytes memory returndata) = exchange.call(data);
-      require(success, string(returndata));
-    }
+    exchangeProxy.proxyExchange(exchangeProxyData);
 
     // Deposit change in balance of USDC to the L2 exchange account of the sender.
-    uint256 usdcBalanceChange = USDC_ADDRESS.balanceOf(address(this)) - originalUsdcBalance;
-    require(usdcBalanceChange >= minUsdcAmount, 'Received USDC is less than minUsdcAmount');
+    uint256 usdcBalance = USDC_ADDRESS.balanceOf(address(this));
 
     // Deposit USDC to the L2.
     STARKWARE_CONTRACT.deposit(
       starkKey,
       USDC_ASSET_TYPE,
       positionId,
-      usdcBalanceChange
+      usdcBalance
     );
 
     // Log the result.
     emit LogConvertedDeposit(
-      _msgSender(),
+      sender,
       address(tokenFrom),
       tokenFromAmount,
-      usdcBalanceChange
+      usdcBalance
     );
 
-    return usdcBalanceChange;
+    return usdcBalance;
   }
 
   /**
@@ -247,57 +207,75 @@ contract CurrencyConvertor is BaseRelayRecipient {
     *  specified by the starkKey and positionId.
     * @dev Emits LogConvertedDeposit event.
     *
-    * @param  minUsdcAmount      The minimum USDC amount the user will accept in a swap.
     * @param  starkKey           The starkKey of the L2 account to deposit into.
     * @param  positionId         The positionId of the L2 account to deposit into.
-    * @param  exchange           The exchange being used to swap the taker token for USDC.
-    * @param  data               Trade parameters for the exchange.
+    * @param  exchangeProxy      The exchangeProxy being used to swap the taker token for USDC.
+    * @param  exchangeProxyData  Trade parameters for the exchangeProxy.
     * @param  signature          The signature for registering. NOTE: if length is 0, will not try to register.
     */
   function depositEth(
-    uint256 minUsdcAmount,
     uint256 starkKey,
     uint256 positionId,
-    address exchange,
-    bytes calldata data,
+    I_ExchangeProxy exchangeProxy,
+    bytes calldata exchangeProxyData,
     bytes calldata signature
   )
-    public
+    external
     payable
+    nonReentrant
+    whenNotPaused
     returns (uint256)
   {
+    address sender = _msgSender();
+
     if (signature.length > 0) {
-      STARKWARE_CONTRACT.registerUser(_msgSender(), starkKey, signature);
+      STARKWARE_CONTRACT.registerUser(sender, starkKey, signature);
     }
 
-    uint256 originalUsdcBalance = USDC_ADDRESS.balanceOf(address(this));
-
     // Swap token
-    (bool success, bytes memory returndata) = exchange.call{ value: msg.value }(data);
-    require(success, string(returndata));
+    exchangeProxy.proxyExchange{ value: msg.value }(exchangeProxyData);
 
     // Deposit change in balance of USDC to the L2 exchange account of the sender.
-    uint256 usdcBalanceChange = USDC_ADDRESS.balanceOf(address(this)) - originalUsdcBalance;
-
-    require(usdcBalanceChange >= minUsdcAmount, 'Received USDC is less than minUsdcAmount');
+    uint256 usdcBalance = USDC_ADDRESS.balanceOf(address(this));
 
     // Deposit USDC to the L2.
     STARKWARE_CONTRACT.deposit(
       starkKey,
       USDC_ASSET_TYPE,
       positionId,
-      usdcBalanceChange
+      usdcBalance
     );
-
 
     // Log the result.
     emit LogConvertedDeposit(
-      _msgSender(),
+      sender,
       ETH_PLACEHOLDER_ADDRESS,
       msg.value,
-      usdcBalanceChange
+      usdcBalance
     );
 
-    return usdcBalanceChange;
+    return usdcBalance;
+  }
+
+  // ============ Internal Functions ============
+
+  function _msgSender()
+    internal
+    view
+    virtual
+    override(Context, ERC2771Context)
+    returns (address sender)
+  {
+    return ERC2771Context._msgSender();
+  }
+
+  function _msgData()
+    internal
+    view
+    virtual
+    override(Context, ERC2771Context)
+    returns (bytes calldata)
+  {
+    return ERC2771Context._msgData();
   }
 }
