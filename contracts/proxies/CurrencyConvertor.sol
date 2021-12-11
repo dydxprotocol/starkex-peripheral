@@ -60,7 +60,9 @@ contract CurrencyConvertor is
     IERC20 usdcAddress,
     uint256 usdcAssetType,
     address trustedForwarder
-  ) ERC2771Context(trustedForwarder) {
+  )
+    ERC2771Context(trustedForwarder)
+  {
     STARKWARE_CONTRACT = starkwareContractAddress;
     USDC_ADDRESS = usdcAddress;
     USDC_ASSET_TYPE = usdcAssetType;
@@ -117,7 +119,7 @@ contract CurrencyConvertor is
       STARKWARE_CONTRACT.registerUser(_msgSender(), starkKey, signature);
     }
 
-    // Send fromToken to this contract.
+    // Send tokenFrom to this contract.
     USDC_ADDRESS.safeTransferFrom(
       _msgSender(),
       address(this),
@@ -167,7 +169,7 @@ contract CurrencyConvertor is
       STARKWARE_CONTRACT.registerUser(sender, starkKey, signature);
     }
 
-    // Send fromToken to this contract.
+    // Send tokenFrom to this contract.
     tokenFrom.safeTransferFrom(
       sender,
       address(exchangeProxy),
@@ -178,14 +180,14 @@ contract CurrencyConvertor is
     exchangeProxy.proxyExchange(exchangeProxyData);
 
     // Deposit change in balance of USDC to the L2 exchange account of the sender.
-    uint256 usdcBalanceChange = USDC_ADDRESS.balanceOf(address(this));
+    uint256 usdcBalance = USDC_ADDRESS.balanceOf(address(this));
 
     // Deposit USDC to the L2.
     STARKWARE_CONTRACT.deposit(
       starkKey,
       USDC_ASSET_TYPE,
       positionId,
-      usdcBalanceChange
+      usdcBalance
     );
 
     // Log the result.
@@ -193,10 +195,10 @@ contract CurrencyConvertor is
       sender,
       address(tokenFrom),
       tokenFromAmount,
-      usdcBalanceChange
+      usdcBalance
     );
 
-    return usdcBalanceChange;
+    return usdcBalance;
   }
 
   /**
@@ -234,14 +236,14 @@ contract CurrencyConvertor is
     exchangeProxy.proxyExchange{ value: msg.value }(exchangeProxyData);
 
     // Deposit change in balance of USDC to the L2 exchange account of the sender.
-    uint256 usdcBalanceChange = USDC_ADDRESS.balanceOf(address(this));
+    uint256 usdcBalance = USDC_ADDRESS.balanceOf(address(this));
 
     // Deposit USDC to the L2.
     STARKWARE_CONTRACT.deposit(
       starkKey,
       USDC_ASSET_TYPE,
       positionId,
-      usdcBalanceChange
+      usdcBalance
     );
 
     // Log the result.
@@ -249,19 +251,31 @@ contract CurrencyConvertor is
       sender,
       ETH_PLACEHOLDER_ADDRESS,
       msg.value,
-      usdcBalanceChange
+      usdcBalance
     );
 
-    return usdcBalanceChange;
+    return usdcBalance;
   }
 
-    // ============ Internal Functions ============
+  // ============ Internal Functions ============
 
-    function _msgSender() internal view virtual override(Context, ERC2771Context) returns (address sender) {
-        return ERC2771Context._msgSender();
-    }
+  function _msgSender()
+    internal
+    view
+    virtual
+    override(Context, ERC2771Context)
+    returns (address sender)
+  {
+    return ERC2771Context._msgSender();
+  }
 
-    function _msgData() internal view virtual override(Context, ERC2771Context) returns (bytes calldata) {
-        return ERC2771Context._msgData();
-    }
+  function _msgData()
+    internal
+    view
+    virtual
+    override(Context, ERC2771Context)
+    returns (bytes calldata)
+  {
+    return ERC2771Context._msgData();
+  }
 }
