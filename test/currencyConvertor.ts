@@ -155,7 +155,7 @@ describe("CurrencyConvertor", () => {
     });
 
     it("cannot directly deposit USDC while contract is paused", async () => {
-      await currencyConvertor.togglePause();
+      await currencyConvertor.pause();
 
       await expect(currencyConvertor.deposit(
         '1',
@@ -164,7 +164,7 @@ describe("CurrencyConvertor", () => {
         Buffer.from('', 'utf8'),
       )).to.be.revertedWith('Pausable: paused');
 
-      await currencyConvertor.togglePause();
+      await currencyConvertor.unpause();
     });
 
     it("register + directly deposit USDC", async () => {
@@ -253,7 +253,7 @@ describe("CurrencyConvertor", () => {
 
     it("cannot deposit USDT as USDC when contract is paused", async () => {
       const exchangeProxyData: string = await zeroExRequestERC20('100', minUsdcAmount);
-      await currencyConvertor.togglePause();
+      await currencyConvertor.pause();
 
       await expect(
         currencyConvertor.depositERC20(
@@ -267,7 +267,7 @@ describe("CurrencyConvertor", () => {
         ),
       ).to.be.revertedWith('Pausable: paused');
 
-      await currencyConvertor.togglePause();
+      await currencyConvertor.unpause();
     });
 
     it("cannot deposit USDT to USDC without enough funds", async () => {
@@ -369,7 +369,7 @@ describe("CurrencyConvertor", () => {
 
     it("cannot deposit ETH as USDC when contract is paused", async () => {
       const { exchangeProxyData, ethValue } = await zeroExRequestEth(minEthAmount, '1');
-      await currencyConvertor.togglePause();
+      await currencyConvertor.pause();
 
       await expect(currencyConvertor.depositEth(
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
@@ -380,7 +380,7 @@ describe("CurrencyConvertor", () => {
         { value: ethValue },
       )).to.be.revertedWith('Pausable: paused');
 
-      await currencyConvertor.togglePause();
+      await currencyConvertor.unpause();
     });
 
     it("cannot deposit ETH to USDC without enough funds", async () => {

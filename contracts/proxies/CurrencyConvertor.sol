@@ -86,14 +86,17 @@ contract CurrencyConvertor is
     return '1';
   }
 
-  function togglePause()
+  function pause()
     external
     onlyOwner
   {
-    if (!paused()) {
-      _pause();
-      return;
-    }
+     _pause();
+  }
+
+  function unpause()
+    external
+    onlyOwner
+  {
     _unpause();
   }
 
@@ -119,7 +122,7 @@ contract CurrencyConvertor is
       STARKWARE_CONTRACT.registerUser(_msgSender(), starkKey, signature);
     }
 
-    // Send tokenFrom to this contract.
+    // Send USDC to this contract.
     USDC_ADDRESS.safeTransferFrom(
       _msgSender(),
       address(this),
@@ -179,7 +182,7 @@ contract CurrencyConvertor is
     // Swap token
     exchangeProxy.proxyExchange(exchangeProxyData);
 
-    // Deposit change in balance of USDC to the L2 exchange account of the sender.
+    // Deposit new in balance of USDC to the L2 exchange account of the sender.
     uint256 usdcBalance = USDC_ADDRESS.balanceOf(address(this));
 
     // Deposit USDC to the L2.

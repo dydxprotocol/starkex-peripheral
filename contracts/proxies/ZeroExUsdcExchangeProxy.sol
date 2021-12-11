@@ -87,13 +87,13 @@ constructor(
     require(success, string(returndata));
 
     // Verify minUsdcAmount
-    uint256 usdcBalanceChange = USDC_ADDRESS.balanceOf(address(this));
-    require(usdcBalanceChange >= data.minUsdcAmount, 'Received USDC is less than minUsdcAmount');
+    uint256 usdcBalance = USDC_ADDRESS.balanceOf(address(this));
+    require(usdcBalance >= data.minUsdcAmount, 'Received USDC is less than minUsdcAmount');
 
     // transfer all USDC balance back to msg.sender
     USDC_ADDRESS.safeTransfer(
       msg.sender,
-      usdcBalanceChange
+      usdcBalance
     );
   }
 }
