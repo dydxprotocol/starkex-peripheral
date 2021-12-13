@@ -145,7 +145,7 @@ contract CurrencyConvertor is
 
   /**
     * @notice Make a deposit to the Starkware Layer2 Solution, after converting funds to USDC.
-    *  Funds will be transfered from the sender and USDC will be deposited into the trading account
+    *  Funds will be transferred from the sender and USDC will be deposited into the trading account
     *  specified by the starkKey and positionId.
     * @dev Emits LogConvertedDeposit event.
     *
@@ -212,7 +212,7 @@ contract CurrencyConvertor is
 
   /**
     * @notice Make a deposit to the Starkware Layer2 Solution, after converting funds to USDC.
-    *  Funds will be transfered from the sender and USDC will be deposited into the trading account
+    *  Ether will be transferred from the sender and USDC will be deposited into the trading account
     *  specified by the starkKey and positionId.
     * @dev Emits LogConvertedDeposit event.
     *
