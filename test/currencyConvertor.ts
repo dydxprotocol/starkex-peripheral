@@ -485,9 +485,13 @@ function encodeZeroExExchangeData(
 ): string {
   return defaultAbiCoder.encode(
     [
-      'tuple(address,address,uint256,address,bytes)',
+      'address',
+      'address',
+      'uint256',
+      'address',
+      'bytes',
     ],
-    [at(
+    at(
       proxyExchangeData,
       [
         'tokenFrom',
@@ -496,6 +500,6 @@ function encodeZeroExExchangeData(
         'exchange',
         'exchangeData',
       ],
-    )],
+    ),
   );
 }
