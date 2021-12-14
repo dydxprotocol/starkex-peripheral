@@ -34,9 +34,9 @@ interface I_ExchangeProxy {
     *
     * @param  proxyExchangeData  Bytes data for the trade, specific to the exchange proxy implementation.
     */
-    function proxyExchange(
-      bytes calldata proxyExchangeData
-    )
-      external
-      payable;
+  function proxyExchange(
+    bytes calldata proxyExchangeData
+  )
+    external
+    payable;
 }

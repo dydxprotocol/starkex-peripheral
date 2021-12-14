@@ -37,23 +37,23 @@ interface I_StarkwareContract {
     * @param  vaultId         The L2 id to deposit into.
     * @param  quantizedAmount The quantized amount being deposited.
     */
-    function deposit(
-      uint256 starkKey,
-      uint256 assetType,
-      uint256 vaultId,
-      uint256 quantizedAmount
-    ) external;
+  function deposit(
+    uint256 starkKey,
+    uint256 assetType,
+    uint256 vaultId,
+    uint256 quantizedAmount
+  ) external;
 
-    /**
+  /**
     * @notice Register to the Starkware Layer2.
     *
     * @param  ethKey          The ethKey of the L2 account to deposit into.
     * @param  starkKey        The starkKey of the L2 account to deposit into.
     * @param  signature       The signature for registering.
     */
-    function registerUser(
-      address ethKey,
-      uint256 starkKey,
-      bytes calldata signature
-    ) external;
+  function registerUser(
+    address ethKey,
+    uint256 starkKey,
+    bytes calldata signature
+  ) external;
 }
