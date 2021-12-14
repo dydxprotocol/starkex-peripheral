@@ -66,7 +66,7 @@ contract ZeroExUsdcExchangeProxy is I_ExchangeProxy {
       bytes memory exchangeData
     ) = abi.decode(proxyExchangeData, (IERC20, address, uint256, address, bytes));
 
-    // Set allowance (if non-zero addresses provided)
+    // Set allowance (if non-zero addresses provided).
     if (
       tokenFrom != IERC20(address(0)) &&
       allowanceTarget != address(0)
@@ -76,16 +76,17 @@ contract ZeroExUsdcExchangeProxy is I_ExchangeProxy {
       tokenFrom.safeApprove(allowanceTarget, type(uint256).max);
     }
 
+    // Call exchange with data to execute swap.
     (bool success, bytes memory returndata) = exchange.call{ value: msg.value }(
       exchangeData
     );
     require(success, string(returndata));
 
-    // Verify minUsdcAmount
+    // Verify minUsdcAmount.
     uint256 usdcBalance = USDC_ADDRESS.balanceOf(address(this));
     require(usdcBalance >= minUsdcAmount, 'Received USDC is less than minUsdcAmount');
 
-    // transfer all USDC balance back to msg.sender
+    // Transfer all USDC balance back to msg.sender.
     USDC_ADDRESS.safeTransfer(
       msg.sender,
       usdcBalance

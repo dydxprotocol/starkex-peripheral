@@ -82,21 +82,28 @@ contract CurrencyConvertor is
 
   // ============ External Functions ============
 
+  /**
+    * @notice Get the version recipient of this contract.
+    */
   function versionRecipient() external pure returns (string memory) {
     return '1';
   }
 
+  /**
+    * @notice Pause this contract.
+    */
   function pause()
     external
-    whenNotPaused
     onlyOwner
   {
      _pause();
   }
 
+  /**
+    * @notice Unpause this contract.
+    */
   function unpause()
     external
-    whenPaused
     onlyOwner
   {
     _unpause();
@@ -127,14 +134,12 @@ contract CurrencyConvertor is
       STARKWARE_CONTRACT.registerUser(sender, starkKey, signature);
     }
 
-    // Send USDC to this contract.
+    // Deposit full balance of USDC to the L2 exchange account of the sender.
     USDC_ADDRESS.safeTransferFrom(
       sender,
       address(this),
       depositAmount
     );
-
-    // Deposit USDC to the L2.
     STARKWARE_CONTRACT.deposit(
       starkKey,
       USDC_ASSET_TYPE,
@@ -190,8 +195,6 @@ contract CurrencyConvertor is
 
     // Deposit full balance of USDC to the L2 exchange account of the sender.
     uint256 usdcBalance = USDC_ADDRESS.balanceOf(address(this));
-
-    // Deposit USDC to the L2.
     STARKWARE_CONTRACT.deposit(
       starkKey,
       USDC_ASSET_TYPE,
@@ -247,8 +250,6 @@ contract CurrencyConvertor is
 
     // Deposit full balance of USDC to the L2 exchange account of the sender.
     uint256 usdcBalance = USDC_ADDRESS.balanceOf(address(this));
-
-    // Deposit USDC to the L2.
     STARKWARE_CONTRACT.deposit(
       starkKey,
       USDC_ASSET_TYPE,
