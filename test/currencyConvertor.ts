@@ -127,7 +127,7 @@ describe("CurrencyConvertor", () => {
       method: "hardhat_stopImpersonatingAccount",
       params: [impersonatedAccount],
     });
-  })
+  });
 
   describe("auxiliary functions", async () => {
     it("verify signature collision is not occurring", () => {

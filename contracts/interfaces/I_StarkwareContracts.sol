@@ -30,7 +30,7 @@ interface I_StarkwareContract {
   // ============ State-Changing Functions ============
 
   /**
-    * @notice Make a deposit to the Starkware Layer2 Solution.
+    * @notice Make a deposit to the Starkware Layer2.
     *
     * @param  starkKey        The starkKey of the L2 account to deposit into.
     * @param  assetType       The assetType to deposit in.
@@ -45,7 +45,7 @@ interface I_StarkwareContract {
     ) external;
 
     /**
-    * @notice Register to the Starkware Layer2 Solution.
+    * @notice Register to the Starkware Layer2.
     *
     * @param  ethKey          The ethKey of the L2 account to deposit into.
     * @param  starkKey        The starkKey of the L2 account to deposit into.

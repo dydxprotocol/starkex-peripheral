@@ -103,7 +103,7 @@ contract CurrencyConvertor is
   }
 
   /**
-    * @notice Make a deposit to the Starkware Layer2 Solution.
+    * @notice Make a deposit to the Starkware Layer2.
     *
     * @param  depositAmount      The amount of USDC to deposit.
     * @param  starkKey           The starkKey of the L2 account to deposit into.
@@ -122,7 +122,7 @@ contract CurrencyConvertor is
   {
     address sender = _msgSender();
 
-    // Register address in Starkware Layer2 Solution.
+    // Register address in Starkware Layer2.
     if (signature.length > 0) {
       STARKWARE_CONTRACT.registerUser(sender, starkKey, signature);
     }
@@ -144,7 +144,7 @@ contract CurrencyConvertor is
   }
 
   /**
-    * @notice Make a deposit to the Starkware Layer2 Solution, after converting funds to USDC.
+    * @notice Make a deposit to the Starkware Layer2, after converting funds to USDC.
     *  Funds will be transferred from the sender and USDC will be deposited into the trading account
     *  specified by the starkKey and positionId.
     * @dev Emits LogConvertedDeposit event.
@@ -153,7 +153,7 @@ contract CurrencyConvertor is
     * @param  tokenFromAmount    The amount of `tokenFrom` tokens to deposit.
     * @param  starkKey           The starkKey of the L2 account to deposit into.
     * @param  positionId         The positionId of the L2 account to deposit into.
-    * @param  exchangeProxy      The exchangeProxy being used to swap the tokenFrom for USDC.
+    * @param  exchangeProxy      The exchangeProxy being used to swap the `tokenFrom` for USDC.
     * @param  exchangeProxyData  Trade parameters for the exchangeProxy.
     * @param  signature          The signature for registering. NOTE: if length is 0, will not try to register.
     */
@@ -173,20 +173,20 @@ contract CurrencyConvertor is
   {
     address sender = _msgSender();
 
-    // Register address in Starkware Layer2 Solution.
+    // Register address in Starkware Layer2.
     if (signature.length > 0) {
       STARKWARE_CONTRACT.registerUser(sender, starkKey, signature);
     }
 
-    // Send tokenFrom to this contract.
+    // Send `tokenFrom` to this contract.
     tokenFrom.safeTransferFrom(
       sender,
       address(exchangeProxy),
       tokenFromAmount
     );
 
-    // Swap token via a non-payable function.
-    exchangeProxy.proxyExchange{ value: 0 }(exchangeProxyData);
+    // Swap token.
+    exchangeProxy.proxyExchange(exchangeProxyData);
 
     // Deposit full balance of USDC to the L2 exchange account of the sender.
     uint256 usdcBalance = USDC_ADDRESS.balanceOf(address(this));
@@ -211,14 +211,14 @@ contract CurrencyConvertor is
   }
 
   /**
-    * @notice Make a deposit to the Starkware Layer2 Solution, after converting funds to USDC.
+    * @notice Make a deposit to the Starkware Layer2, after converting funds to USDC.
     *  Ether will be transferred from the sender and USDC will be deposited into the trading account
     *  specified by the starkKey and positionId.
     * @dev Emits LogConvertedDeposit event.
     *
     * @param  starkKey           The starkKey of the L2 account to deposit into.
     * @param  positionId         The positionId of the L2 account to deposit into.
-    * @param  exchangeProxy      The exchangeProxy being used to swap the tokenFrom for USDC.
+    * @param  exchangeProxy      The exchangeProxy being used to swap the `tokenFrom` for USDC.
     * @param  exchangeProxyData  Trade parameters for the exchangeProxy.
     * @param  signature          The signature for registering. NOTE: if length is 0, will not try to register.
     */
@@ -237,7 +237,7 @@ contract CurrencyConvertor is
   {
     address sender = _msgSender();
 
-    // Register address in Starkware Layer2 Solution.
+    // Register address in Starkware Layer2.
     if (signature.length > 0) {
       STARKWARE_CONTRACT.registerUser(sender, starkKey, signature);
     }
