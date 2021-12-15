@@ -141,10 +141,6 @@ describe("CurrencyConvertor", () => {
       });
     })
 
-    it("versionRecipient", async () => {
-      await currencyConvertor.versionRecipient();
-    });
-
     it("directly deposit USDC", async () => {
       await currencyConvertor.deposit(
         '1',
