@@ -1,5 +1,5 @@
 import { deployContract } from 'ethereum-waffle';
-import { CurrencyConvertor } from '../../src/types';
+import { CurrencyConvertor, ZeroExUsdcExchangeProxy } from '../../src/types';
 import CurrencyConvertorArtifact from '../../artifacts/contracts/proxies/CurrencyConvertor.sol/CurrencyConvertor.json';
 import ZeroExExchangeProxyArtifact from '../../artifacts/contracts/proxies/ZeroExUsdcExchangeProxy.sol/ZeroExUsdcExchangeProxy.json';
 import { getHre } from '../helpers/hre';
@@ -30,7 +30,13 @@ export async function deployProxyDeposit(
 
   const isRopsten: boolean = environment ===NetworkName.ropsten;
 
-  await Promise.all([
+  const [
+    currencyConvertor,
+    zeroExExchangeProxy,
+  ]: [
+    CurrencyConvertor,
+    ZeroExUsdcExchangeProxy,
+  ] = await Promise.all([
     deployContract(
       signers[0],
       CurrencyConvertorArtifact,
@@ -40,13 +46,16 @@ export async function deployProxyDeposit(
         isRopsten ? ROPSTEN_USDC_ASSET_ID : MAINNET_USDC_ASSET_ID,
         isRopsten ? BICONOMY_ROPSTEN_FORWARDER : BICONOMY_MAINNET_FORWARDER,
       ],
-    ),
+    ) as Promise<CurrencyConvertor>,
     deployContract(
       signers[0],
       ZeroExExchangeProxyArtifact,
       [
         isRopsten ? DYDX_USDC_ADDRESS_ROPSTEN : USDC_ADDRESS_MAINNET,
       ],
-    )
+    ) as Promise<ZeroExUsdcExchangeProxy>
   ]);
+
+  console.log(`currencyConvertor address: ${currencyConvertor.address}`);
+  console.log(`zeroExExchangeProxy address: ${zeroExExchangeProxy.address}`);
 }
