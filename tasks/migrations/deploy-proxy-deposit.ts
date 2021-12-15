@@ -1,6 +1,7 @@
 import { deployContract } from 'ethereum-waffle';
-import { CurrencyConvertor } from '../../src/types';
+import { CurrencyConvertor, ZeroExUsdcExchangeProxy } from '../../src/types';
 import CurrencyConvertorArtifact from '../../artifacts/contracts/proxies/CurrencyConvertor.sol/CurrencyConvertor.json';
+import ZeroExExchangeProxyArtifact from '../../artifacts/contracts/proxies/ZeroExUsdcExchangeProxy.sol/ZeroExUsdcExchangeProxy.json';
 import { getHre } from '../helpers/hre';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { NetworkName } from '../helpers/types';
@@ -28,14 +29,33 @@ export async function deployProxyDeposit(
   const signers: SignerWithAddress[] = await getHre().ethers.getSigners();
 
   const isRopsten: boolean = environment ===NetworkName.ropsten;
-  await deployContract(
-    signers[0],
-    CurrencyConvertorArtifact,
-    [
-      isRopsten ? STARKWARE_ROPSTEN_ADDRESS : STARKWARE_MAINNET_ADDRESS,
-      isRopsten ? DYDX_USDC_ADDRESS_ROPSTEN : USDC_ADDRESS_MAINNET,
-      isRopsten ? ROPSTEN_USDC_ASSET_ID : MAINNET_USDC_ASSET_ID,
-      isRopsten ? BICONOMY_ROPSTEN_FORWARDER : BICONOMY_MAINNET_FORWARDER,
-    ],
-  ) as CurrencyConvertor;
+
+  const [
+    currencyConvertor,
+    zeroExExchangeProxy,
+  ]: [
+    CurrencyConvertor,
+    ZeroExUsdcExchangeProxy,
+  ] = await Promise.all([
+    deployContract(
+      signers[0],
+      CurrencyConvertorArtifact,
+      [
+        isRopsten ? STARKWARE_ROPSTEN_ADDRESS : STARKWARE_MAINNET_ADDRESS,
+        isRopsten ? DYDX_USDC_ADDRESS_ROPSTEN : USDC_ADDRESS_MAINNET,
+        isRopsten ? ROPSTEN_USDC_ASSET_ID : MAINNET_USDC_ASSET_ID,
+        isRopsten ? BICONOMY_ROPSTEN_FORWARDER : BICONOMY_MAINNET_FORWARDER,
+      ],
+    ) as Promise<CurrencyConvertor>,
+    deployContract(
+      signers[0],
+      ZeroExExchangeProxyArtifact,
+      [
+        isRopsten ? DYDX_USDC_ADDRESS_ROPSTEN : USDC_ADDRESS_MAINNET,
+      ],
+    ) as Promise<ZeroExUsdcExchangeProxy>
+  ]);
+
+  console.log(`currencyConvertor address: ${currencyConvertor.address}`);
+  console.log(`zeroExExchangeProxy address: ${zeroExExchangeProxy.address}`);
 }
