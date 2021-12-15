@@ -30,31 +30,25 @@ export async function deployProxyDeposit(
 
   const isRopsten: boolean = environment ===NetworkName.ropsten;
 
-  const [
-    currencyConvertor,
-    zeroExExchangeProxy,
-  ]: [
-    CurrencyConvertor,
-    ZeroExUsdcExchangeProxy,
-  ] = await Promise.all([
-    deployContract(
-      signers[0],
-      CurrencyConvertorArtifact,
-      [
-        isRopsten ? STARKWARE_ROPSTEN_ADDRESS : STARKWARE_MAINNET_ADDRESS,
-        isRopsten ? DYDX_USDC_ADDRESS_ROPSTEN : USDC_ADDRESS_MAINNET,
-        isRopsten ? ROPSTEN_USDC_ASSET_ID : MAINNET_USDC_ASSET_ID,
-        isRopsten ? BICONOMY_ROPSTEN_FORWARDER : BICONOMY_MAINNET_FORWARDER,
-      ],
-    ) as Promise<CurrencyConvertor>,
-    deployContract(
-      signers[0],
-      ZeroExExchangeProxyArtifact,
-      [
-        isRopsten ? DYDX_USDC_ADDRESS_ROPSTEN : USDC_ADDRESS_MAINNET,
-      ],
-    ) as Promise<ZeroExUsdcExchangeProxy>
-  ]);
+  const currencyConvertor: CurrencyConvertor = await deployContract(
+    signers[0],
+    CurrencyConvertorArtifact,
+    [
+      isRopsten ? STARKWARE_ROPSTEN_ADDRESS : STARKWARE_MAINNET_ADDRESS,
+      isRopsten ? DYDX_USDC_ADDRESS_ROPSTEN : USDC_ADDRESS_MAINNET,
+      isRopsten ? ROPSTEN_USDC_ASSET_ID : MAINNET_USDC_ASSET_ID,
+      isRopsten ? BICONOMY_ROPSTEN_FORWARDER : BICONOMY_MAINNET_FORWARDER,
+    ],
+  ) as CurrencyConvertor;
+
+  const zeroExExchangeProxy: ZeroExUsdcExchangeProxy = await deployContract(
+    signers[0],
+    ZeroExExchangeProxyArtifact,
+    [
+      isRopsten ? DYDX_USDC_ADDRESS_ROPSTEN : USDC_ADDRESS_MAINNET,
+    ],
+  ) as ZeroExUsdcExchangeProxy;
+
 
   console.log(`currencyConvertor address: ${currencyConvertor.address}`);
   console.log(`zeroExExchangeProxy address: ${zeroExExchangeProxy.address}`);
