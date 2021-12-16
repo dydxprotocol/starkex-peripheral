@@ -8,7 +8,7 @@ import Web3 from 'web3';
 import chai from "chai";
 import { solidity } from "ethereum-waffle";
 import CurrencyConvertorArtifact from '../artifacts/contracts/proxies/CurrencyConvertor.sol/CurrencyConvertor.json';
-import ZeroExExchangeProxyArtifact from '../artifacts/contracts/proxies/ZeroExUsdcExchangeProxy.sol/ZeroExUsdcExchangeProxy.json';
+import UsdcExchangeProxyArtifact from '../artifacts/contracts/proxies/UsdcExchangeProxy.sol/UsdcExchangeProxy.json';
 import {
   axiosRequest,
   generateQueryPath,
@@ -16,7 +16,7 @@ import {
 } from './helpers';
 import { erc20Abi } from './abi/erc20';
 
-import { CurrencyConvertor, IERC20, ZeroExUsdcExchangeProxy } from '../src/types';
+import { CurrencyConvertor, IERC20, UsdcExchangeProxy } from '../src/types';
 import _ from 'underscore';
 import { at } from 'lodash';
 import { BigNumber } from 'ethers';
@@ -43,7 +43,7 @@ const zeroAddress: string = '0x0000000000000000000000000000000000000000';
 let currencyConvertor: CurrencyConvertor;
 
 describe("CurrencyConvertor", () => {
-  let zeroExExchangeProxy: ZeroExUsdcExchangeProxy;
+  let usdcExchangeProxy: UsdcExchangeProxy;
   let usdcTokenContract: IERC20;
   let usdtTokenContract: IERC20;
   let signer: SignerWithAddress;
@@ -91,13 +91,13 @@ describe("CurrencyConvertor", () => {
       ],
     ) as CurrencyConvertor;
 
-    zeroExExchangeProxy = await deployContract(
+    usdcExchangeProxy = await deployContract(
       signer,
-      ZeroExExchangeProxyArtifact,
+      UsdcExchangeProxyArtifact,
       [
         usdcAddress,
       ],
-    ) as ZeroExUsdcExchangeProxy;
+    ) as UsdcExchangeProxy;
 
     // get ERC20 contracts
     usdtTokenContract = new ethers.Contract(
@@ -135,7 +135,7 @@ describe("CurrencyConvertor", () => {
         return web3.eth.abi.encodeFunctionSignature(fn);
       });
 
-      Object.keys(zeroExExchangeProxy.functions).map((fn) => {
+      Object.keys(usdcExchangeProxy.functions).map((fn) => {
         const signature = web3.eth.abi.encodeFunctionSignature(fn);
         expect(erc20signatures.includes(signature)).to.be.eq(false);
       });
@@ -164,13 +164,13 @@ describe("CurrencyConvertor", () => {
     });
 
     it("register + directly deposit USDC", async () => {
-      const zeroExTransaction = await zeroExRequestERC20('100', '1');
+      const usdcExTransaction = await zeroExRequestERC20('100', '1');
 
       await expect(currencyConvertor.deposit(
         '100000',
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
-        zeroExTransaction,
+        usdcExTransaction,
       )).to.be.revertedWith('STARK_KEY_UNAVAILABLE');
     });
   });
@@ -192,7 +192,7 @@ describe("CurrencyConvertor", () => {
         transferFromAmount,
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
-        zeroExExchangeProxy.address,
+        usdcExchangeProxy.address,
         exchangeProxyData,
         Buffer.from('', 'utf8'),
       );
@@ -227,7 +227,7 @@ describe("CurrencyConvertor", () => {
         transferFromAmount,
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
-        zeroExExchangeProxy.address,
+        usdcExchangeProxy.address,
         exchangeProxyData2,
         Buffer.from('', 'utf8'),
       );
@@ -241,7 +241,7 @@ describe("CurrencyConvertor", () => {
         transferFromAmount,
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
-        zeroExExchangeProxy.address,
+        usdcExchangeProxy.address,
         exchangeProxyData,
         exchangeProxyData,
       )).to.be.revertedWith('STARK_KEY_UNAVAILABLE');
@@ -257,7 +257,7 @@ describe("CurrencyConvertor", () => {
           transferFromAmount,
           starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
           '22', // positionId
-          zeroExExchangeProxy.address,
+          usdcExchangeProxy.address,
           exchangeProxyData,
           Buffer.from('', 'utf8'),
         ),
@@ -274,7 +274,7 @@ describe("CurrencyConvertor", () => {
         '1',
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
-        zeroExExchangeProxy.address,
+        usdcExchangeProxy.address,
         exchangeProxyData,
         Buffer.from('', 'utf8'),
       )).to.be.revertedWith('');
@@ -288,7 +288,7 @@ describe("CurrencyConvertor", () => {
         transferFromAmount,
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f90'),
         '22', // positionId
-        zeroExExchangeProxy.address,
+        usdcExchangeProxy.address,
         exchangeProxyData,
         Buffer.from('', 'utf8'),
       )).to.be.revertedWith('INVALID_STARK_KEY');
@@ -302,7 +302,7 @@ describe("CurrencyConvertor", () => {
         transferFromAmount,
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
-        zeroExExchangeProxy.address,
+        usdcExchangeProxy.address,
         exchangeProxyData,
         Buffer.from('', 'utf8'),
       )).to.be.revertedWith('Received USDC is less than minUsdcAmount');
@@ -324,7 +324,7 @@ describe("CurrencyConvertor", () => {
       const tx = await currencyConvertor.depositEth(
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
-        zeroExExchangeProxy.address,
+        usdcExchangeProxy.address,
         exchangeProxyData,
         Buffer.from('', 'utf8'),
         { value: ethValue },
@@ -355,7 +355,7 @@ describe("CurrencyConvertor", () => {
       await expect(currencyConvertor.depositEth(
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
-        zeroExExchangeProxy.address,
+        usdcExchangeProxy.address,
         exchangeProxyData,
         exchangeProxyData,
         { value: ethValue },
@@ -370,7 +370,7 @@ describe("CurrencyConvertor", () => {
       await expect(currencyConvertor.depositEth(
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
-        zeroExExchangeProxy.address,
+        usdcExchangeProxy.address,
         exchangeProxyData,
         exchangeProxyData,
         { value: ethValue },
@@ -385,7 +385,7 @@ describe("CurrencyConvertor", () => {
       await expect(currencyConvertor.depositEth(
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
-        zeroExExchangeProxy.address,
+        usdcExchangeProxy.address,
         exchangeProxyData,
         Buffer.from('', 'utf8'),
         { value: '1' },
@@ -398,7 +398,7 @@ describe("CurrencyConvertor", () => {
       await expect(currencyConvertor.depositEth(
         starkKeyToUint256('050e0343dc2c0c00aa13f584a31db64524e98b7ff11cd2e07c2f074440821f99'),
         '22', // positionId
-        zeroExExchangeProxy.address,
+        usdcExchangeProxy.address,
         exchangeProxyData,
         Buffer.from('', 'utf8'),
         { value: ethValue },
@@ -427,7 +427,7 @@ async function zeroExRequestERC20(
     ),
   }) as { to: string, data: string, allowanceTarget: string };
 
-  return encodeZeroExExchangeData({
+  return encodeProxyExchangeData({
     tokenFrom: usdtTokenAddress,
     allowanceTarget: skipApproval ? zeroAddress : zeroExResponse.allowanceTarget,
     minUsdcAmount,
@@ -456,7 +456,7 @@ async function zeroExRequestEth(
     ),
   }) as { to: string, data: string, value: number, allowanceTarget: string };
 
-  const exchangeProxyData = encodeZeroExExchangeData({
+  const exchangeProxyData = encodeProxyExchangeData({
     tokenFrom: zeroAddress,
     allowanceTarget: skipApproval ? zeroAddress : zeroExResponse.allowanceTarget,
     minUsdcAmount,
@@ -470,7 +470,7 @@ async function zeroExRequestEth(
   }
 }
 
-function encodeZeroExExchangeData(
+function encodeProxyExchangeData(
   proxyExchangeData: {
     tokenFrom: string,
     allowanceTarget: string,

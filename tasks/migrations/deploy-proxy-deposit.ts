@@ -1,7 +1,7 @@
 import { deployContract } from 'ethereum-waffle';
-import { CurrencyConvertor, ZeroExUsdcExchangeProxy } from '../../src/types';
+import { CurrencyConvertor, UsdcExchangeProxy } from '../../src/types';
 import CurrencyConvertorArtifact from '../../artifacts/contracts/proxies/CurrencyConvertor.sol/CurrencyConvertor.json';
-import ZeroExExchangeProxyArtifact from '../../artifacts/contracts/proxies/ZeroExUsdcExchangeProxy.sol/ZeroExUsdcExchangeProxy.json';
+import UsdcExchangeProxyArtifact from '../../artifacts/contracts/proxies/UsdcExchangeProxy.sol/UsdcExchangeProxy.json';
 import { getHre } from '../helpers/hre';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { NetworkName } from '../helpers/types';
@@ -41,15 +41,15 @@ export async function deployProxyDeposit(
     ],
   ) as CurrencyConvertor;
 
-  const zeroExExchangeProxy: ZeroExUsdcExchangeProxy = await deployContract(
+  const usdcExchangeProxy: UsdcExchangeProxy = await deployContract(
     signers[0],
-    ZeroExExchangeProxyArtifact,
+    UsdcExchangeProxyArtifact,
     [
       isRopsten ? DYDX_USDC_ADDRESS_ROPSTEN : USDC_ADDRESS_MAINNET,
     ],
-  ) as ZeroExUsdcExchangeProxy;
+  ) as UsdcExchangeProxy;
 
 
   console.log(`currencyConvertor address: ${currencyConvertor.address}`);
-  console.log(`zeroExExchangeProxy address: ${zeroExExchangeProxy.address}`);
+  console.log(`usdcExchangeProxy address: ${usdcExchangeProxy.address}`);
 }
