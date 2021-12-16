@@ -24,12 +24,12 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { I_ExchangeProxy } from "../interfaces/I_ExchangeProxy.sol";
 
 /**
- * @title ZeroExUsdcExchangeProxy
+ * @title UsdcExchangeProxy
  * @author dYdX
  *
- * @notice Contract for interacting with ZeroEx exchange.
+ * @notice Contract for interacting with exchanges.
  */
-contract ZeroExUsdcExchangeProxy is I_ExchangeProxy {
+contract UsdcExchangeProxy is I_ExchangeProxy {
   using SafeERC20 for IERC20;
 
   // ============ State Variables ============
