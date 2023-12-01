@@ -6,9 +6,11 @@
     "coverage": "npx hardhat coverage",
     "deploy-proxy-deposit:ROPSTEN": "npx hardhat --network ropsten deploy-proxy-deposit",
     "deploy-proxy-deposit:GOERLI": "npx hardhat --network goerli deploy-proxy-deposit",
+    "deploy-proxy-deposit:SEPOLIA": "npx hardhat --network sepolia deploy-proxy-deposit",
     "deploy-proxy-deposit:MAINNET": "npx hardhat --network mainnet deploy-proxy-deposit",
     "verify-contract-proxy-deposit:ROPSTEN": "npx hardhat verify --network ropsten",
     "verify-contract-proxy-deposit:GOERLI": "npx hardhat verify --network goerli",
+    "verify-contract-proxy-deposit:SEPOLIA": "npx hardhat verify --network sepolia",
     "verify-contract-proxy-deposit:MAINNET": "npx hardhat verify --network mainnet"
   },
   "dependencies": {

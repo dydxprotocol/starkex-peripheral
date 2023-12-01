@@ -60,6 +60,7 @@ const config: HardhatUserConfig = {
     },
     goerli: getRemoteNetworkConfig(NetworkName.goerli, 5),
     ropsten: getRemoteNetworkConfig(NetworkName.ropsten, 3),
+    sepolia: getRemoteNetworkConfig(NetworkName.sepolia, 11155111),
     mainnet: getRemoteNetworkConfig(NetworkName.mainnet, 1),
   },
   solidity: {

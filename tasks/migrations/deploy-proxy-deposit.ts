@@ -26,6 +26,13 @@ const config: {
     PERPETUAL_ADDRESS: '0xFE76edf35648Cc733d57200646cb1Dc63d05462F',
     BICONOMY_FORWARDER_ADDRESS: '0xE041608922d06a4F26C0d4c27d8bCD01daf1f792',
   },
+  [NetworkName.sepolia]: {
+    USDC_ASSET_ID: '0x1e70c509c4c6bfafe8b73d2fc1819444b2c0b435d4b82c0f24addff9565ce25',
+    USDC_ADDRESS: '0x7fC9C132268E0E414991449c003DbdB3E73E2059',
+    PERPETUAL_ADDRESS: '0x3D05aaCd0fED84f65dE0D91e4621298E702911E2',
+    // Biconomy forwarder address is incorrect, will not work
+    BICONOMY_FORWARDER_ADDRESS: '0xE041608922d06a4F26C0d4c27d8bCD01daf1f792',
+  },
   [NetworkName.mainnet]: {
     USDC_ASSET_ID: '0x02893294412a4c8f915f75892b395ebbf6859ec246ec365c3b1f56f47c3a0a5d',
     USDC_ADDRESS: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
@@ -38,7 +45,7 @@ export async function deployProxyDeposit(
   environment: NetworkName,
 
 ): Promise<void> {
-  if (![NetworkName.ropsten, NetworkName.goerli, NetworkName.mainnet].includes(environment)) {
+  if (![NetworkName.ropsten, NetworkName.goerli, NetworkName.sepolia, NetworkName.mainnet].includes(environment)) {
     throw Error(`Invalid environment: ${environment}`);
   }
 
