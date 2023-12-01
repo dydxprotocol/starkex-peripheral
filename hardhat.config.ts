@@ -39,7 +39,7 @@ function getRemoteNetworkConfig(
   networkId: number,
 ): HttpNetworkUserConfig {
   return {
-    url: `https://eth-${networkName}.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
+    url: `https://eth-${networkName}.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
     chainId: networkId,
     accounts: {
       mnemonic: MNEMONIC,
